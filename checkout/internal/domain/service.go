@@ -30,6 +30,8 @@ type Product struct {
 	Price uint32
 }
 
+type OrderID int64
+
 type OrderItem struct {
 	SKU   uint32
 	Count uint16
@@ -44,5 +46,5 @@ type ProductGetter interface {
 }
 
 type OrderCreator interface {
-	CreateOrder(ctx context.Context, user int64, items []OrderItem) error
+	CreateOrder(ctx context.Context, user int64, items []OrderItem) (OrderID, error)
 }

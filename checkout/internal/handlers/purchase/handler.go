@@ -17,11 +17,13 @@ type RequestPayload struct {
 	User int64 `json:"user"`
 }
 
-type ResponsePayload struct{}
+type ResponsePayload struct {
+	OrderID int64 `json:"orderID"`
+}
 
 func (h *Handler) Handle(ctx context.Context, reqPayload RequestPayload) (ResponsePayload, error) {
-	err := h.service.MakePurchase(ctx, reqPayload.User)
-	return ResponsePayload{}, err
+	orderID, err := h.service.MakePurchase(ctx, reqPayload.User)
+	return ResponsePayload{OrderID: int64(orderID)}, err
 }
 
 func (RequestPayload) Validate() error {

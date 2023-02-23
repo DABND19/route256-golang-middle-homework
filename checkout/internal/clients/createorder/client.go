@@ -32,7 +32,11 @@ type ResponsePayload struct {
 	OrderID int64 `json:"orderID"`
 }
 
-func (c *Client) CreateOrder(ctx context.Context, user int64, userOrder []domain.OrderItem) error {
+func (c *Client) CreateOrder(
+	ctx context.Context,
+	user int64,
+	userOrder []domain.OrderItem,
+) (domain.OrderID, error) {
 	reqPayload := RequestPayload{
 		User:  user,
 		Items: make([]OrderItemPayload, 0, len(userOrder)),
@@ -44,5 +48,6 @@ func (c *Client) CreateOrder(ctx context.Context, user int64, userOrder []domain
 		})
 	}
 	resPayload := ResponsePayload{}
-	return serviceclient.MakeRequest(ctx, c.serviceClient, c.endpointPath, reqPayload, &resPayload)
+	err := serviceclient.MakeRequest(ctx, c.serviceClient, c.endpointPath, reqPayload, &resPayload)
+	return domain.OrderID(resPayload.OrderID), err
 }
