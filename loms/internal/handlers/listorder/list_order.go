@@ -1,5 +1,7 @@
 package listorder
 
+import "context"
+
 type Handler struct{}
 
 func New() *Handler {
@@ -21,7 +23,7 @@ type ResponsePayload struct {
 	Items  []Item `json:"items"`
 }
 
-func (*Handler) Handle(req RequestPayload) (ResponsePayload, error) {
+func (*Handler) Handle(ctx context.Context, req RequestPayload) (ResponsePayload, error) {
 	resPayload := ResponsePayload{
 		Status: "new",
 		User:   1,

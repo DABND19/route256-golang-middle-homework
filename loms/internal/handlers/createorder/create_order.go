@@ -1,5 +1,7 @@
 package createorder
 
+import "context"
+
 type Handler struct {
 }
 
@@ -21,7 +23,7 @@ type ResponsePayload struct {
 	OrderID int64 `json:"orderID"`
 }
 
-func (*Handler) Handle(req RequestPayload) (ResponsePayload, error) {
+func (*Handler) Handle(ctx context.Context, req RequestPayload) (ResponsePayload, error) {
 	resPayload := ResponsePayload{OrderID: 1}
 	return resPayload, nil
 }

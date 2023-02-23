@@ -1,5 +1,7 @@
 package cancelorder
 
+import "context"
+
 type Handler struct{}
 
 func New() *Handler {
@@ -12,7 +14,7 @@ type RequestPayload struct {
 
 type ResponsePayload struct{}
 
-func (*Handler) Handle(reqPayload RequestPayload) (ResponsePayload, error) {
+func (*Handler) Handle(ctx context.Context, reqPayload RequestPayload) (ResponsePayload, error) {
 	return ResponsePayload{}, nil
 }
 

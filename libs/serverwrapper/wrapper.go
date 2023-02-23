@@ -1,6 +1,7 @@
 package serverwrapper
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"log"
@@ -12,10 +13,10 @@ type Validator interface {
 }
 
 type Wrapper[Req Validator, Res any] struct {
-	handler func(req Req) (Res, error)
+	handler func(ctx context.Context, req Req) (Res, error)
 }
 
-func New[Req Validator, Res any](handler func(req Req) (Res, error)) *Wrapper[Req, Res] {
+func New[Req Validator, Res any](handler func(ctx context.Context, req Req) (Res, error)) *Wrapper[Req, Res] {
 	return &Wrapper[Req, Res]{
 		handler: handler,
 	}
@@ -73,26 +74,27 @@ func (wrapper *Wrapper[Req, Res]) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		}
 		err := writeError(w, httpError)
 		if err != nil {
-			log.Fatal("Failed to encode error payload:", err)
+			log.Println("Failed to encode error payload:", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
 		return
 	}
 
-	resPayload, err := wrapper.handler(reqPayload)
+	ctx := r.Context()
+	resPayload, err := wrapper.handler(ctx, reqPayload)
 	if err != nil {
 		var httpError HTTPError
 		if errors.As(err, &httpError) {
 			err := writeError(w, httpError)
 			if err != nil {
-				log.Fatal("Failed to encode error payload:", err)
+				log.Println("Failed to encode error payload:", err)
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			return
 		} else {
-			log.Fatal("Internal server error:", err)
+			log.Println("Internal server error:", err)
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -100,7 +102,7 @@ func (wrapper *Wrapper[Req, Res]) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 	err = writeJSON(w, resPayload, http.StatusOK)
 	if err != nil {
-		log.Fatal("Failed to encode response payload:", err)
+		log.Println("Failed to encode response payload:", err)
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
