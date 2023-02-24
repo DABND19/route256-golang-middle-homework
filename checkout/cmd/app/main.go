@@ -1,6 +1,7 @@
 package main
 
 import (
+	"errors"
 	"log"
 	"net/http"
 	"route256/checkout/internal/clients/createorder"
@@ -52,6 +53,10 @@ func main() {
 	log.Println("Starting a server...")
 	err = http.ListenAndServe(config.Data.Server.Address, nil)
 	if err != nil {
-		log.Fatal("Couldn't start a server:", err)
+		if errors.Is(err, http.ErrServerClosed) {
+			log.Println("Server stopped")
+		} else {
+			log.Fatalln("Couldn't start a server:", err)
+		}
 	}
 }
