@@ -48,6 +48,6 @@ func (c *Client) CreateOrder(
 		})
 	}
 	resPayload := ResponsePayload{}
-	err := serviceclient.MakeRequest(ctx, c.serviceClient, c.endpointPath, reqPayload, &resPayload)
+	err := c.serviceClient.Request(ctx, c.endpointPath, reqPayload, &resPayload)
 	return domain.OrderID(resPayload.OrderID), err
 }

@@ -36,7 +36,7 @@ func (c *Client) GetProduct(ctx context.Context, sku uint32) (domain.Product, er
 		SKU:   sku,
 	}
 	resPayload := ResponsePayload{}
-	err := serviceclient.MakeRequest(ctx, c.serviceClient, c.endpointPath, reqPayload, &resPayload)
+	err := c.serviceClient.Request(ctx, c.endpointPath, reqPayload, &resPayload)
 	return domain.Product{
 		Name:  resPayload.Name,
 		Price: resPayload.Price,

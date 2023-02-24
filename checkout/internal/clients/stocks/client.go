@@ -36,7 +36,7 @@ type ResponsePayload struct {
 func (c *Client) Stocks(ctx context.Context, sku uint32) ([]domain.Stock, error) {
 	reqPayload := RequestPayload{SKU: sku}
 	resPayload := ResponsePayload{}
-	err := serviceclient.MakeRequest(ctx, c.serviceClient, c.endpointPath, reqPayload, &resPayload)
+	err := c.serviceClient.Request(ctx, c.endpointPath, reqPayload, &resPayload)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to request stocks")
 	}

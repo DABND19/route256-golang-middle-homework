@@ -20,8 +20,8 @@ func New(serviceUrl string) *ServiceClient {
 	}
 }
 
-func MakeRequest[Req any, Res any](ctx context.Context, client *ServiceClient, endpointPath string, reqPayload Req, resPayload *Res) error {
-	reqUrl, err := url.JoinPath(client.ServiceUrl, endpointPath)
+func (c *ServiceClient) Request(ctx context.Context, endpointPath string, reqPayload any, resPayload any) error {
+	reqUrl, err := url.JoinPath(c.ServiceUrl, endpointPath)
 	if err != nil {
 		return err
 	}
