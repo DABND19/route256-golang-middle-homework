@@ -3,6 +3,7 @@ package listcart
 import (
 	"context"
 	"route256/checkout/internal/domain"
+	"route256/checkout/internal/schemas"
 )
 
 type Handler struct {
@@ -13,10 +14,6 @@ func New(service *domain.Service) *Handler {
 	return &Handler{
 		service: service,
 	}
-}
-
-type RequestPayload struct {
-	User int64 `json:"user"`
 }
 
 type ItemPayload struct {
@@ -31,7 +28,7 @@ type ResponsePayload struct {
 	TotalPrice uint32        `json:"totalPrice"`
 }
 
-func (h *Handler) Handle(ctx context.Context, reqPayload RequestPayload) (ResponsePayload, error) {
+func (h *Handler) Handle(ctx context.Context, reqPayload schemas.UserPayload) (ResponsePayload, error) {
 	cart, err := h.service.ListCart(ctx, reqPayload.User)
 	if err != nil {
 		return ResponsePayload{}, err
@@ -51,8 +48,4 @@ func (h *Handler) Handle(ctx context.Context, reqPayload RequestPayload) (Respon
 		})
 	}
 	return resPayload, nil
-}
-
-func (RequestPayload) Validate() error {
-	return nil
 }

@@ -2,6 +2,7 @@ package stocks
 
 import (
 	"context"
+	"errors"
 )
 
 type Handler struct{}
@@ -14,18 +15,18 @@ type RequestPayload struct {
 	SKU uint32 `json:"sku"`
 }
 
-type Stock struct {
+type StockPayload struct {
 	WarehouseID int64  `json:"warehouseID"`
 	Count       uint64 `json:"count"`
 }
 
 type ResponsePayload struct {
-	Stocks []Stock `json:"stocks"`
+	Stocks []StockPayload `json:"stocks"`
 }
 
 func (*Handler) Handle(ctx context.Context, reqPayload RequestPayload) (ResponsePayload, error) {
 	resPayload := ResponsePayload{
-		Stocks: []Stock{
+		Stocks: []StockPayload{
 			{WarehouseID: 1, Count: 1},
 			{WarehouseID: 2, Count: 2},
 		},
@@ -33,6 +34,9 @@ func (*Handler) Handle(ctx context.Context, reqPayload RequestPayload) (Response
 	return resPayload, nil
 }
 
-func (RequestPayload) Validate() error {
+func (p RequestPayload) Validate() error {
+	if p.SKU == 0 {
+		return errors.New("sku required")
+	}
 	return nil
 }

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net/http"
 	"route256/checkout/internal/domain"
+	"route256/checkout/internal/schemas"
 	"route256/libs/serverwrapper"
 )
 
@@ -17,9 +18,8 @@ func New(service *domain.Service) *Handler {
 }
 
 type RequestPayload struct {
-	User  int64  `json:"user"`
-	SKU   uint32 `json:"sku"`
-	Count uint16 `json:"count"`
+	schemas.UserPayload
+	schemas.CartItemPayload
 }
 
 type ResponsePayload struct{}
@@ -35,6 +35,12 @@ func (h *Handler) Handle(ctx context.Context, reqPayload RequestPayload) (Respon
 	return ResponsePayload{}, err
 }
 
-func (RequestPayload) Validate() error {
+func (p RequestPayload) Validate() error {
+	if err := p.CartItemPayload.Validate(); err != nil {
+		return err
+	}
+	if err := p.UserPayload.Validate(); err != nil {
+		return err
+	}
 	return nil
 }
