@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 	"route256/libs/serverwrapper"
+	"route256/loms/internal/config"
 	"route256/loms/internal/handlers/cancelorder"
 	"route256/loms/internal/handlers/createorder"
 	"route256/loms/internal/handlers/listorder"
@@ -11,9 +12,12 @@ import (
 	"route256/loms/internal/handlers/stocks"
 )
 
-const port = ":8081"
-
 func main() {
+	err := config.Load("config.yml")
+	if err != nil {
+		log.Fatalln("Failed to load config:", err)
+	}
+
 	createOrderHandler := createorder.New()
 	listOrderHandler := listorder.New()
 	orderPayedHandler := orderpayed.New()
@@ -27,7 +31,7 @@ func main() {
 	http.Handle("/stocks", serverwrapper.New(stocksHandler.Handle))
 
 	log.Println("Starting a server...")
-	err := http.ListenAndServe(port, nil)
+	err = http.ListenAndServe(config.Data.Server.Address, nil)
 	if err != nil {
 		log.Fatal("Couldn't start a server:", err)
 		return

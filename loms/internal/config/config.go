@@ -11,21 +11,8 @@ type ServerConfig struct {
 	Address string `yaml:"address"`
 }
 
-type LomsServiceConfig struct {
-	Url string `yaml:"url"`
-}
-
-type ProductServiceConfig struct {
-	Url         string `yaml:"url"`
-	AccessToken string `yaml:"accessToken"`
-}
-
 type Config struct {
-	Server           ServerConfig `yaml:"server"`
-	ExternalServices struct {
-		Loms    LomsServiceConfig    `yaml:"loms"`
-		Product ProductServiceConfig `yaml:"product"`
-	} `yaml:"externalServices"`
+	Server ServerConfig `yaml:"server"`
 }
 
 var Data = Config{}

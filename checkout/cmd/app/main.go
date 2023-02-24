@@ -16,12 +16,10 @@ import (
 	"route256/libs/serviceclient"
 )
 
-const port = ":8080"
-
 func main() {
 	err := config.Load("config.yml")
 	if err != nil {
-		log.Fatal(err)
+		log.Fatalln("Failed to load config:", err)
 	}
 
 	lomsServiceClient := serviceclient.New(config.Data.ExternalServices.Loms.Url)
@@ -52,7 +50,7 @@ func main() {
 	http.Handle("/purchase", serverwrapper.New(purchaseHandler.Handle))
 
 	log.Println("Starting a server...")
-	err = http.ListenAndServe(port, nil)
+	err = http.ListenAndServe(config.Data.Server.Address, nil)
 	if err != nil {
 		log.Fatal("Couldn't start a server:", err)
 	}
