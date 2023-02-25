@@ -1,0 +1,8 @@
+server:
+  address: ":8080"
+externalServices:
+  loms:
+    url: http://loms:8081
+  product:
+    url: http://route256.pavl.uk:8080
+    accessToken: test_token
