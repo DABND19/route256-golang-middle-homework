@@ -4,9 +4,8 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"route256/checkout/internal/clients/createorder"
 	"route256/checkout/internal/clients/getproduct"
-	"route256/checkout/internal/clients/stocks"
+	"route256/checkout/internal/clients/loms"
 	"route256/checkout/internal/config"
 	"route256/checkout/internal/domain"
 	"route256/checkout/internal/handlers/addtocart"
@@ -15,6 +14,9 @@ import (
 	"route256/checkout/internal/handlers/purchase"
 	"route256/libs/serverwrapper"
 	"route256/libs/serviceclient"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/credentials/insecure"
 )
 
 func main() {
@@ -22,10 +24,12 @@ func main() {
 	if err != nil {
 		log.Fatalln("Failed to load config:", err)
 	}
+	lomsServiceConn, err := grpc.Dial(
+		config.Data.ExternalServices.Loms.Url,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
 
-	lomsServiceClient := serviceclient.New(config.Data.ExternalServices.Loms.Url)
-	stocksEndpointClient := stocks.New(lomsServiceClient, "/stocks")
-	createOrderEndpointClient := createorder.New(lomsServiceClient, "/createOrder")
+	lomsServiceClient := loms.New(lomsServiceConn)
 
 	productServiceClient := serviceclient.New(config.Data.ExternalServices.Product.Url)
 	getProductEndpointClient := getproduct.New(
@@ -35,9 +39,9 @@ func main() {
 	)
 
 	service := domain.New(
-		stocksEndpointClient,
+		lomsServiceClient,
 		getProductEndpointClient,
-		createOrderEndpointClient,
+		lomsServiceClient,
 	)
 
 	addToCartHandler := addtocart.New(service)
