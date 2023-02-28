@@ -2,7 +2,7 @@ server:
   address: ":8080"
 externalServices:
   loms:
-    url: http://loms:8081
+    url: loms:8081
   product:
-    url: http://route256.pavl.uk:8080
+    url: route256.pavl.uk:8082
     accessToken: test_token

@@ -1,21 +1,18 @@
 package main
 
 import (
-	"errors"
 	"log"
-	"net/http"
+	"net"
 	"route256/checkout/internal/clients/loms"
 	"route256/checkout/internal/clients/product"
 	"route256/checkout/internal/config"
 	"route256/checkout/internal/domain"
-	"route256/checkout/internal/handlers/addtocart"
-	"route256/checkout/internal/handlers/deletefromcart"
-	"route256/checkout/internal/handlers/listcart"
-	"route256/checkout/internal/handlers/purchase"
-	"route256/libs/serverwrapper"
+	serviceAPI "route256/checkout/internal/handlers/v1"
+	apiSchema "route256/checkout/pkg/checkoutv1"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -51,23 +48,20 @@ func main() {
 		lomsServiceClient,
 	)
 
-	addToCartHandler := addtocart.New(service)
-	deleteFromCartHandler := deletefromcart.New()
-	listCartHandler := listcart.New(service)
-	purchaseHandler := purchase.New(service)
-
-	http.Handle("/addToCart", serverwrapper.New(addToCartHandler.Handle))
-	http.Handle("/deleteFromCart", serverwrapper.New(deleteFromCartHandler.Handle))
-	http.Handle("/listCart", serverwrapper.New(listCartHandler.Handle))
-	http.Handle("/purchase", serverwrapper.New(purchaseHandler.Handle))
-
-	log.Println("Starting a server...")
-	err = http.ListenAndServe(config.Data.Server.Address, nil)
+	lis, err := net.Listen("tcp", config.Data.Server.Address)
 	if err != nil {
-		if errors.Is(err, http.ErrServerClosed) {
-			log.Println("Server stopped")
-		} else {
-			log.Fatalln("Couldn't start a server:", err)
-		}
+		log.Fatalln(err)
+	}
+
+	s := grpc.NewServer()
+	reflection.Register(s)
+
+	checkoutV1 := serviceAPI.New(service)
+	apiSchema.RegisterCheckoutV1Server(s, checkoutV1)
+
+	log.Println("Server listen on:", lis.Addr())
+	err = s.Serve(lis)
+	if err != nil {
+		log.Fatalln("Couldn't start a server:", err)
 	}
 }
