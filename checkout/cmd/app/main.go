@@ -4,8 +4,8 @@ import (
 	"errors"
 	"log"
 	"net/http"
-	"route256/checkout/internal/clients/getproduct"
 	"route256/checkout/internal/clients/loms"
+	"route256/checkout/internal/clients/product"
 	"route256/checkout/internal/config"
 	"route256/checkout/internal/domain"
 	"route256/checkout/internal/handlers/addtocart"
@@ -13,7 +13,6 @@ import (
 	"route256/checkout/internal/handlers/listcart"
 	"route256/checkout/internal/handlers/purchase"
 	"route256/libs/serverwrapper"
-	"route256/libs/serviceclient"
 
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -24,23 +23,31 @@ func main() {
 	if err != nil {
 		log.Fatalln("Failed to load config:", err)
 	}
+
 	lomsServiceConn, err := grpc.Dial(
 		config.Data.ExternalServices.Loms.Url,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
 	)
-
+	if err != nil {
+		log.Fatalln("Couldn't connect to LOMS service:", err)
+	}
 	lomsServiceClient := loms.New(lomsServiceConn)
 
-	productServiceClient := serviceclient.New(config.Data.ExternalServices.Product.Url)
-	getProductEndpointClient := getproduct.New(
-		productServiceClient,
-		"/get_product",
+	productServiceConn, err := grpc.Dial(
+		config.Data.ExternalServices.Product.Url,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+	)
+	if err != nil {
+		log.Fatalln("Couldn't connect to product service:", err)
+	}
+	productServiceClient := product.New(
+		productServiceConn,
 		config.Data.ExternalServices.Product.AccessToken,
 	)
 
 	service := domain.New(
 		lomsServiceClient,
-		getProductEndpointClient,
+		productServiceClient,
 		lomsServiceClient,
 	)
 
