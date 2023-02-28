@@ -46,4 +46,4 @@ generate:
 	--plugin=protoc-gen-go=bin/protoc-gen-go \
 	--go-grpc_out=pkg/lomsv1 --go-grpc_opt=paths=source_relative \
 	--plugin=protoc-gen-go-grpc=bin/protoc-gen-go-grpc \
-	api/loms/v1/service.proto
+	api/loms/v1/loms-service.proto
