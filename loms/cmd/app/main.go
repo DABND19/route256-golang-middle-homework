@@ -1,16 +1,14 @@
 package main
 
 import (
-	"errors"
 	"log"
-	"net/http"
-	"route256/libs/serverwrapper"
+	"net"
 	"route256/loms/internal/config"
-	"route256/loms/internal/handlers/cancelorder"
-	"route256/loms/internal/handlers/createorder"
-	"route256/loms/internal/handlers/listorder"
-	"route256/loms/internal/handlers/orderpayed"
-	"route256/loms/internal/handlers/stocks"
+	serviceAPI "route256/loms/internal/handlers/v1"
+	apiSchema "route256/loms/pkg/lomsv1"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -19,25 +17,20 @@ func main() {
 		log.Fatalln("Failed to load config:", err)
 	}
 
-	createOrderHandler := createorder.New()
-	listOrderHandler := listorder.New()
-	orderPayedHandler := orderpayed.New()
-	cancelOrderHandler := cancelorder.New()
-	stocksHandler := stocks.New()
-
-	http.Handle("/createOrder", serverwrapper.New(createOrderHandler.Handle))
-	http.Handle("/listOrder", serverwrapper.New(listOrderHandler.Handle))
-	http.Handle("/orderPayed", serverwrapper.New(orderPayedHandler.Handle))
-	http.Handle("/cancelOrder", serverwrapper.New(cancelOrderHandler.Handle))
-	http.Handle("/stocks", serverwrapper.New(stocksHandler.Handle))
-
-	log.Println("Starting a server...")
-	err = http.ListenAndServe(config.Data.Server.Address, nil)
+	lis, err := net.Listen("tcp", config.Data.Server.Address)
 	if err != nil {
-		if errors.Is(err, http.ErrServerClosed) {
-			log.Println("Server stopped")
-		} else {
-			log.Fatalln("Couldn't start a server:", err)
-		}
+		log.Fatalln(err)
+	}
+
+	s := grpc.NewServer()
+	reflection.Register(s)
+
+	lomsV1 := serviceAPI.New()
+	apiSchema.RegisterLomsV1Server(s, lomsV1)
+
+	log.Println("Server listen on", lis.Addr())
+
+	if err := s.Serve(lis); err != nil {
+		log.Fatalln("Couldn't start a server:", err)
 	}
 }
