@@ -11,7 +11,6 @@ import (
 	apiSchema "route256/checkout/pkg/checkoutv1"
 
 	"google.golang.org/grpc"
-	"google.golang.org/grpc/credentials/insecure"
 	"google.golang.org/grpc/reflection"
 )
 
@@ -21,32 +20,20 @@ func main() {
 		log.Fatalln("Failed to load config:", err)
 	}
 
-	lomsServiceConn, err := grpc.Dial(
-		config.Data.ExternalServices.Loms.Url,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
-	)
+	lomsServiceClient, err := loms.New(config.Data.ExternalServices.Loms.Url)
 	if err != nil {
 		log.Fatalln("Couldn't connect to LOMS service:", err)
 	}
-	lomsServiceClient := loms.New(lomsServiceConn)
 
-	productServiceConn, err := grpc.Dial(
+	productServiceClient, err := product.New(
 		config.Data.ExternalServices.Product.Url,
-		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		config.Data.ExternalServices.Product.AccessToken,
 	)
 	if err != nil {
 		log.Fatalln("Couldn't connect to product service:", err)
 	}
-	productServiceClient := product.New(
-		productServiceConn,
-		config.Data.ExternalServices.Product.AccessToken,
-	)
 
-	service := domain.New(
-		lomsServiceClient,
-		productServiceClient,
-		lomsServiceClient,
-	)
+	service := domain.New(lomsServiceClient, productServiceClient)
 
 	lis, err := net.Listen("tcp", config.Data.Server.Address)
 	if err != nil {

@@ -10,7 +10,7 @@ var (
 )
 
 func (s *Service) AddToCart(ctx context.Context, user int64, sku uint32, count uint16) error {
-	stocks, err := s.stocksChecker.Stocks(ctx, sku)
+	stocks, err := s.lomsServiceClient.Stocks(ctx, sku)
 	if err != nil {
 		return errors.New("Failed to check stocks")
 	}

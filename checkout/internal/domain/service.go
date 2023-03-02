@@ -3,20 +3,17 @@ package domain
 import "context"
 
 type Service struct {
-	stocksChecker StocksChecker
-	productGetter ProductGetter
-	orderCreator  OrderCreator
+	lomsServiceClient    LOMSServiceClient
+	productServiceClient ProductServiceClient
 }
 
 func New(
-	stocksChecker StocksChecker,
-	productGetter ProductGetter,
-	orderCreator OrderCreator,
+	lomsServiceClient LOMSServiceClient,
+	productServiceClient ProductServiceClient,
 ) *Service {
 	return &Service{
-		stocksChecker: stocksChecker,
-		productGetter: productGetter,
-		orderCreator:  orderCreator,
+		lomsServiceClient:    lomsServiceClient,
+		productServiceClient: productServiceClient,
 	}
 }
 
@@ -37,14 +34,11 @@ type OrderItem struct {
 	Count uint16
 }
 
-type StocksChecker interface {
+type LOMSServiceClient interface {
+	CreateOrder(ctx context.Context, user int64, items []OrderItem) (OrderID, error)
 	Stocks(ctx context.Context, sku uint32) ([]Stock, error)
 }
 
-type ProductGetter interface {
+type ProductServiceClient interface {
 	GetProduct(ctx context.Context, sku uint32) (Product, error)
-}
-
-type OrderCreator interface {
-	CreateOrder(ctx context.Context, user int64, items []OrderItem) (OrderID, error)
 }
