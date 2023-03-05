@@ -7,13 +7,13 @@ option go_package = "route256/loms/pkg/lomsv1";
 import "google/protobuf/empty.proto";
 
 service LomsV1 {
-  rpc createOrder(CreateOrderRequest) returns(OrderID);
-  rpc listOrder(OrderID) returns(ListOrderResponse);
+  rpc CreateOrder(CreateOrderRequest) returns(OrderID);
+  rpc ListOrder(OrderID) returns(ListOrderResponse);
 
-  rpc orderPayed(OrderID) returns(google.protobuf.Empty);
-  rpc cancelOrder(OrderID) returns(google.protobuf.Empty);
+  rpc OrderPayed(OrderID) returns(google.protobuf.Empty);
+  rpc CancelOrder(OrderID) returns(google.protobuf.Empty);
 
-  rpc stocks(SKU) returns(StocksList);
+  rpc Stocks(SKU) returns(StocksList);
 }
 
 message CreateOrderRequest {

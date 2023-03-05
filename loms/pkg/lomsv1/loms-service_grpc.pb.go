@@ -8,7 +8,6 @@ package lomsv1
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -41,7 +40,7 @@ func NewLomsV1Client(cc grpc.ClientConnInterface) LomsV1Client {
 
 func (c *lomsV1Client) CreateOrder(ctx context.Context, in *CreateOrderRequest, opts ...grpc.CallOption) (*OrderID, error) {
 	out := new(OrderID)
-	err := c.cc.Invoke(ctx, "/route256.loms.v1.LomsV1/createOrder", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/route256.loms.v1.LomsV1/CreateOrder", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -50,7 +49,7 @@ func (c *lomsV1Client) CreateOrder(ctx context.Context, in *CreateOrderRequest, 
 
 func (c *lomsV1Client) ListOrder(ctx context.Context, in *OrderID, opts ...grpc.CallOption) (*ListOrderResponse, error) {
 	out := new(ListOrderResponse)
-	err := c.cc.Invoke(ctx, "/route256.loms.v1.LomsV1/listOrder", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/route256.loms.v1.LomsV1/ListOrder", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -59,7 +58,7 @@ func (c *lomsV1Client) ListOrder(ctx context.Context, in *OrderID, opts ...grpc.
 
 func (c *lomsV1Client) OrderPayed(ctx context.Context, in *OrderID, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, "/route256.loms.v1.LomsV1/orderPayed", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/route256.loms.v1.LomsV1/OrderPayed", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -68,7 +67,7 @@ func (c *lomsV1Client) OrderPayed(ctx context.Context, in *OrderID, opts ...grpc
 
 func (c *lomsV1Client) CancelOrder(ctx context.Context, in *OrderID, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, "/route256.loms.v1.LomsV1/cancelOrder", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/route256.loms.v1.LomsV1/CancelOrder", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -77,7 +76,7 @@ func (c *lomsV1Client) CancelOrder(ctx context.Context, in *OrderID, opts ...grp
 
 func (c *lomsV1Client) Stocks(ctx context.Context, in *SKU, opts ...grpc.CallOption) (*StocksList, error) {
 	out := new(StocksList)
-	err := c.cc.Invoke(ctx, "/route256.loms.v1.LomsV1/stocks", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/route256.loms.v1.LomsV1/Stocks", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -138,7 +137,7 @@ func _LomsV1_CreateOrder_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/route256.loms.v1.LomsV1/createOrder",
+		FullMethod: "/route256.loms.v1.LomsV1/CreateOrder",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LomsV1Server).CreateOrder(ctx, req.(*CreateOrderRequest))
@@ -156,7 +155,7 @@ func _LomsV1_ListOrder_Handler(srv interface{}, ctx context.Context, dec func(in
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/route256.loms.v1.LomsV1/listOrder",
+		FullMethod: "/route256.loms.v1.LomsV1/ListOrder",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LomsV1Server).ListOrder(ctx, req.(*OrderID))
@@ -174,7 +173,7 @@ func _LomsV1_OrderPayed_Handler(srv interface{}, ctx context.Context, dec func(i
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/route256.loms.v1.LomsV1/orderPayed",
+		FullMethod: "/route256.loms.v1.LomsV1/OrderPayed",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LomsV1Server).OrderPayed(ctx, req.(*OrderID))
@@ -192,7 +191,7 @@ func _LomsV1_CancelOrder_Handler(srv interface{}, ctx context.Context, dec func(
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/route256.loms.v1.LomsV1/cancelOrder",
+		FullMethod: "/route256.loms.v1.LomsV1/CancelOrder",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LomsV1Server).CancelOrder(ctx, req.(*OrderID))
@@ -210,7 +209,7 @@ func _LomsV1_Stocks_Handler(srv interface{}, ctx context.Context, dec func(inter
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/route256.loms.v1.LomsV1/stocks",
+		FullMethod: "/route256.loms.v1.LomsV1/Stocks",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(LomsV1Server).Stocks(ctx, req.(*SKU))
@@ -226,23 +225,23 @@ var LomsV1_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*LomsV1Server)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "createOrder",
+			MethodName: "CreateOrder",
 			Handler:    _LomsV1_CreateOrder_Handler,
 		},
 		{
-			MethodName: "listOrder",
+			MethodName: "ListOrder",
 			Handler:    _LomsV1_ListOrder_Handler,
 		},
 		{
-			MethodName: "orderPayed",
+			MethodName: "OrderPayed",
 			Handler:    _LomsV1_OrderPayed_Handler,
 		},
 		{
-			MethodName: "cancelOrder",
+			MethodName: "CancelOrder",
 			Handler:    _LomsV1_CancelOrder_Handler,
 		},
 		{
-			MethodName: "stocks",
+			MethodName: "Stocks",
 			Handler:    _LomsV1_Stocks_Handler,
 		},
 	},

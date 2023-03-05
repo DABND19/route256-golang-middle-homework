@@ -8,7 +8,6 @@ package checkoutv1
 
 import (
 	context "context"
-
 	grpc "google.golang.org/grpc"
 	codes "google.golang.org/grpc/codes"
 	status "google.golang.org/grpc/status"
@@ -40,7 +39,7 @@ func NewCheckoutV1Client(cc grpc.ClientConnInterface) CheckoutV1Client {
 
 func (c *checkoutV1Client) AddToCart(ctx context.Context, in *EditCartRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, "/route256.checkout.v1.CheckoutV1/addToCart", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/route256.checkout.v1.CheckoutV1/AddToCart", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -49,7 +48,7 @@ func (c *checkoutV1Client) AddToCart(ctx context.Context, in *EditCartRequest, o
 
 func (c *checkoutV1Client) DeleteFromCart(ctx context.Context, in *EditCartRequest, opts ...grpc.CallOption) (*emptypb.Empty, error) {
 	out := new(emptypb.Empty)
-	err := c.cc.Invoke(ctx, "/route256.checkout.v1.CheckoutV1/deleteFromCart", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/route256.checkout.v1.CheckoutV1/DeleteFromCart", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -58,7 +57,7 @@ func (c *checkoutV1Client) DeleteFromCart(ctx context.Context, in *EditCartReque
 
 func (c *checkoutV1Client) ListCart(ctx context.Context, in *User, opts ...grpc.CallOption) (*Cart, error) {
 	out := new(Cart)
-	err := c.cc.Invoke(ctx, "/route256.checkout.v1.CheckoutV1/listCart", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/route256.checkout.v1.CheckoutV1/ListCart", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -67,7 +66,7 @@ func (c *checkoutV1Client) ListCart(ctx context.Context, in *User, opts ...grpc.
 
 func (c *checkoutV1Client) Purchase(ctx context.Context, in *User, opts ...grpc.CallOption) (*OrderID, error) {
 	out := new(OrderID)
-	err := c.cc.Invoke(ctx, "/route256.checkout.v1.CheckoutV1/purchase", in, out, opts...)
+	err := c.cc.Invoke(ctx, "/route256.checkout.v1.CheckoutV1/Purchase", in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -124,7 +123,7 @@ func _CheckoutV1_AddToCart_Handler(srv interface{}, ctx context.Context, dec fun
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/route256.checkout.v1.CheckoutV1/addToCart",
+		FullMethod: "/route256.checkout.v1.CheckoutV1/AddToCart",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CheckoutV1Server).AddToCart(ctx, req.(*EditCartRequest))
@@ -142,7 +141,7 @@ func _CheckoutV1_DeleteFromCart_Handler(srv interface{}, ctx context.Context, de
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/route256.checkout.v1.CheckoutV1/deleteFromCart",
+		FullMethod: "/route256.checkout.v1.CheckoutV1/DeleteFromCart",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CheckoutV1Server).DeleteFromCart(ctx, req.(*EditCartRequest))
@@ -160,7 +159,7 @@ func _CheckoutV1_ListCart_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/route256.checkout.v1.CheckoutV1/listCart",
+		FullMethod: "/route256.checkout.v1.CheckoutV1/ListCart",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CheckoutV1Server).ListCart(ctx, req.(*User))
@@ -178,7 +177,7 @@ func _CheckoutV1_Purchase_Handler(srv interface{}, ctx context.Context, dec func
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: "/route256.checkout.v1.CheckoutV1/purchase",
+		FullMethod: "/route256.checkout.v1.CheckoutV1/Purchase",
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
 		return srv.(CheckoutV1Server).Purchase(ctx, req.(*User))
@@ -194,19 +193,19 @@ var CheckoutV1_ServiceDesc = grpc.ServiceDesc{
 	HandlerType: (*CheckoutV1Server)(nil),
 	Methods: []grpc.MethodDesc{
 		{
-			MethodName: "addToCart",
+			MethodName: "AddToCart",
 			Handler:    _CheckoutV1_AddToCart_Handler,
 		},
 		{
-			MethodName: "deleteFromCart",
+			MethodName: "DeleteFromCart",
 			Handler:    _CheckoutV1_DeleteFromCart_Handler,
 		},
 		{
-			MethodName: "listCart",
+			MethodName: "ListCart",
 			Handler:    _CheckoutV1_ListCart_Handler,
 		},
 		{
-			MethodName: "purchase",
+			MethodName: "Purchase",
 			Handler:    _CheckoutV1_Purchase_Handler,
 		},
 	},
