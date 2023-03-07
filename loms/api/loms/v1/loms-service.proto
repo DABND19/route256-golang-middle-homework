@@ -1,0 +1,50 @@
+syntax = "proto3";
+
+package route256.loms.v1;
+
+option go_package = "route256/loms/pkg/lomsv1";
+
+import "google/protobuf/empty.proto";
+
+service LomsV1 {
+  rpc CreateOrder(CreateOrderRequest) returns(OrderID);
+  rpc ListOrder(OrderID) returns(ListOrderResponse);
+
+  rpc OrderPayed(OrderID) returns(google.protobuf.Empty);
+  rpc CancelOrder(OrderID) returns(google.protobuf.Empty);
+
+  rpc Stocks(SKU) returns(StocksList);
+}
+
+message CreateOrderRequest {
+  int64 user = 1;
+  repeated OrderItem items = 2;
+}
+
+message ListOrderResponse {
+  string status = 1;
+  int64 user = 2;
+  repeated OrderItem items = 3;
+}
+
+message OrderItem {
+  uint32 sku = 1;
+  uint32 count = 2;
+}
+
+message OrderID {
+  int64 orderID = 1;
+}
+
+message SKU {
+  uint32 sku = 1;
+}
+
+message Stock {
+  int64 warehouseID = 1;
+  uint64 count = 2;
+}
+
+message StocksList {
+  repeated Stock stocks = 1;
+}

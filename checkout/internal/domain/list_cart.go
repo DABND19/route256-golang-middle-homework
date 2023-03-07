@@ -21,7 +21,7 @@ func (s *Service) ListCart(ctx context.Context, user int64) ([]CartItem, error) 
 
 	cartItems := make([]CartItem, 0, len(userOrder))
 	for _, orderItem := range userOrder {
-		product, err := s.productGetter.GetProduct(ctx, orderItem.SKU)
+		product, err := s.productServiceClient.GetProduct(ctx, orderItem.SKU)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to request product")
 		}

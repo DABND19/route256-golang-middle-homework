@@ -1,20 +1,17 @@
 package main
 
 import (
-	"errors"
 	"log"
-	"net/http"
-	"route256/checkout/internal/clients/createorder"
-	"route256/checkout/internal/clients/getproduct"
-	"route256/checkout/internal/clients/stocks"
+	"net"
+	"route256/checkout/internal/clients/loms"
+	"route256/checkout/internal/clients/product"
 	"route256/checkout/internal/config"
 	"route256/checkout/internal/domain"
-	"route256/checkout/internal/handlers/addtocart"
-	"route256/checkout/internal/handlers/deletefromcart"
-	"route256/checkout/internal/handlers/listcart"
-	"route256/checkout/internal/handlers/purchase"
-	"route256/libs/serverwrapper"
-	"route256/libs/serviceclient"
+	serviceAPI "route256/checkout/internal/handlers/v1"
+	apiSchema "route256/checkout/pkg/checkoutv1"
+
+	"google.golang.org/grpc"
+	"google.golang.org/grpc/reflection"
 )
 
 func main() {
@@ -23,40 +20,35 @@ func main() {
 		log.Fatalln("Failed to load config:", err)
 	}
 
-	lomsServiceClient := serviceclient.New(config.Data.ExternalServices.Loms.Url)
-	stocksEndpointClient := stocks.New(lomsServiceClient, "/stocks")
-	createOrderEndpointClient := createorder.New(lomsServiceClient, "/createOrder")
+	lomsServiceClient, err := loms.New(config.Data.ExternalServices.Loms.Url)
+	if err != nil {
+		log.Fatalln("Couldn't connect to LOMS service:", err)
+	}
 
-	productServiceClient := serviceclient.New(config.Data.ExternalServices.Product.Url)
-	getProductEndpointClient := getproduct.New(
-		productServiceClient,
-		"/get_product",
+	productServiceClient, err := product.New(
+		config.Data.ExternalServices.Product.Url,
 		config.Data.ExternalServices.Product.AccessToken,
 	)
-
-	service := domain.New(
-		stocksEndpointClient,
-		getProductEndpointClient,
-		createOrderEndpointClient,
-	)
-
-	addToCartHandler := addtocart.New(service)
-	deleteFromCartHandler := deletefromcart.New()
-	listCartHandler := listcart.New(service)
-	purchaseHandler := purchase.New(service)
-
-	http.Handle("/addToCart", serverwrapper.New(addToCartHandler.Handle))
-	http.Handle("/deleteFromCart", serverwrapper.New(deleteFromCartHandler.Handle))
-	http.Handle("/listCart", serverwrapper.New(listCartHandler.Handle))
-	http.Handle("/purchase", serverwrapper.New(purchaseHandler.Handle))
-
-	log.Println("Starting a server...")
-	err = http.ListenAndServe(config.Data.Server.Address, nil)
 	if err != nil {
-		if errors.Is(err, http.ErrServerClosed) {
-			log.Println("Server stopped")
-		} else {
-			log.Fatalln("Couldn't start a server:", err)
-		}
+		log.Fatalln("Couldn't connect to product service:", err)
+	}
+
+	service := domain.New(lomsServiceClient, productServiceClient)
+
+	lis, err := net.Listen("tcp", config.Data.Server.Address)
+	if err != nil {
+		log.Fatalln(err)
+	}
+
+	s := grpc.NewServer()
+	reflection.Register(s)
+
+	checkoutV1 := serviceAPI.New(service)
+	apiSchema.RegisterCheckoutV1Server(s, checkoutV1)
+
+	log.Println("Server listen on:", lis.Addr())
+	err = s.Serve(lis)
+	if err != nil {
+		log.Fatalln("Couldn't start a server:", err)
 	}
 }
