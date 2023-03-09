@@ -7,12 +7,17 @@ import (
 	"gopkg.in/yaml.v3"
 )
 
+type PostgresConfig struct {
+	DSN string `yaml:"dsn"`
+}
+
 type ServerConfig struct {
 	Address string `yaml:"address"`
 }
 
 type Config struct {
-	Server ServerConfig `yaml:"server"`
+	Server   ServerConfig   `yaml:"server"`
+	Postgres PostgresConfig `yaml:"postgres"`
 }
 
 var Data = Config{}
