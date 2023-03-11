@@ -2,30 +2,24 @@ package domain
 
 import (
 	"context"
+	"route256/checkout/internal/models"
 
 	"github.com/pkg/errors"
 )
 
-type CartItem struct {
-	SKU   uint32
-	Count uint16
-	Name  string
-	Price uint32
-}
-
-func (s *Service) ListCart(ctx context.Context, user int64) ([]CartItem, error) {
+func (s *Service) ListCart(ctx context.Context, user models.User) ([]models.CartItem, error) {
 	userOrder, err := s.GetUserOrder(ctx, user)
 	if err != nil {
 		return nil, errors.Wrap(err, "Failed to query user order")
 	}
 
-	cartItems := make([]CartItem, 0, len(userOrder))
+	cartItems := make([]models.CartItem, 0, len(userOrder))
 	for _, orderItem := range userOrder {
 		product, err := s.productServiceClient.GetProduct(ctx, orderItem.SKU)
 		if err != nil {
 			return nil, errors.Wrap(err, "Failed to request product")
 		}
-		cartItems = append(cartItems, CartItem{
+		cartItems = append(cartItems, models.CartItem{
 			SKU:   orderItem.SKU,
 			Count: orderItem.Count,
 			Name:  product.Name,
@@ -35,7 +29,7 @@ func (s *Service) ListCart(ctx context.Context, user int64) ([]CartItem, error) 
 	return cartItems, nil
 }
 
-func (s *Service) CalculateTotalPrice(cart []CartItem) (total uint32) {
+func (s *Service) CalculateTotalPrice(cart []models.CartItem) (total uint32) {
 	for _, item := range cart {
 		total += item.Price * uint32(item.Count)
 	}

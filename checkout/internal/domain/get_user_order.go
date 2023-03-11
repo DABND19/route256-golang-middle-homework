@@ -1,9 +1,12 @@
 package domain
 
-import "context"
+import (
+	"context"
+	"route256/checkout/internal/models"
+)
 
-func (s *Service) GetUserOrder(ctx context.Context, user int64) ([]OrderItem, error) {
-	return []OrderItem{
+func (s *Service) GetUserOrder(ctx context.Context, user models.User) ([]models.OrderItem, error) {
+	return []models.OrderItem{
 		{SKU: 1076963, Count: 1},
 		{SKU: 1148162, Count: 1},
 		{SKU: 1625903, Count: 1},

@@ -8,8 +8,10 @@ import (
 	"route256/checkout/internal/config"
 	"route256/checkout/internal/domain"
 	serviceAPI "route256/checkout/internal/handlers/v1"
+	"route256/checkout/internal/middlewares"
 	apiSchema "route256/checkout/pkg/checkoutv1"
 
+	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -40,7 +42,11 @@ func main() {
 		log.Fatalln(err)
 	}
 
-	s := grpc.NewServer()
+	s := grpc.NewServer(
+		grpc.UnaryInterceptor(
+			grpcMiddleware.ChainUnaryServer(middlewares.DomainErrorsMiddleware),
+		),
+	)
 	reflection.Register(s)
 
 	checkoutV1 := serviceAPI.New(service)
