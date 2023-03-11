@@ -1,2 +1,4 @@
 server:
   address: ":8081"
+postgres:
+  dsn: postgres://user:hackme123@loms_postgres:5432/loms?sslmode=disable
