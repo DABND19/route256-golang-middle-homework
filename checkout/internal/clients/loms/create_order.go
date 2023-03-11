@@ -14,7 +14,7 @@ import (
 func (c *Client) CreateOrder(
 	ctx context.Context,
 	user models.User,
-	userOrder []models.OrderItem,
+	userOrder []models.CartItem,
 ) (*models.OrderID, error) {
 	reqPayload := &lomsServiceAPI.CreateOrderRequest{
 		User:  int64(user),

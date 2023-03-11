@@ -7,29 +7,40 @@ import (
 	"github.com/pkg/errors"
 )
 
-func (s *Service) ListCart(ctx context.Context, user models.User) ([]models.CartItem, error) {
-	userOrder, err := s.GetUserOrder(ctx, user)
+func (s *Service) ListCart(ctx context.Context, user models.User) ([]models.CartProduct, error) {
+	var cartItems []models.CartItem
+	err := s.RunReadCommited(ctx, func(ctx context.Context) error {
+		var err error
+		cartItems, err = s.cartsRepository.GetCartItems(ctx, user)
+		if err != nil {
+			return err
+		}
+
+		return nil
+	})
 	if err != nil {
-		return nil, errors.Wrap(err, "Failed to query user order")
+		return nil, errors.Wrap(err, "Failed to query user cart")
 	}
 
-	cartItems := make([]models.CartItem, 0, len(userOrder))
-	for _, orderItem := range userOrder {
-		product, err := s.productServiceClient.GetProduct(ctx, orderItem.SKU)
+	cartProducts := make([]models.CartProduct, 0, len(cartItems))
+	for _, item := range cartItems {
+		product, err := s.productServiceClient.GetProduct(ctx, item.SKU)
 		if err != nil {
+			if errors.Is(err, ProductNotFound) {
+				continue
+			}
 			return nil, errors.Wrap(err, "Failed to request product")
 		}
-		cartItems = append(cartItems, models.CartItem{
-			SKU:   orderItem.SKU,
-			Count: orderItem.Count,
-			Name:  product.Name,
-			Price: product.Price,
+
+		cartProducts = append(cartProducts, models.CartProduct{
+			CartItem: item,
+			Product:  *product,
 		})
 	}
-	return cartItems, nil
+	return cartProducts, nil
 }
 
-func (s *Service) CalculateTotalPrice(cart []models.CartItem) (total uint32) {
+func (s *Service) CalculateTotalPrice(cart []models.CartProduct) (total uint32) {
 	for _, item := range cart {
 		total += item.Price * uint32(item.Count)
 	}

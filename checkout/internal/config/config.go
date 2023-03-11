@@ -11,6 +11,10 @@ type ServerConfig struct {
 	Address string `yaml:"address"`
 }
 
+type PostgresConfig struct {
+	DSN string `yaml:"dsn"`
+}
+
 type LomsServiceConfig struct {
 	Url string `yaml:"url"`
 }
@@ -21,7 +25,8 @@ type ProductServiceConfig struct {
 }
 
 type Config struct {
-	Server           ServerConfig `yaml:"server"`
+	Server           ServerConfig   `yaml:"server"`
+	Postgres         PostgresConfig `yaml:"postgres"`
 	ExternalServices struct {
 		Loms    LomsServiceConfig    `yaml:"loms"`
 		Product ProductServiceConfig `yaml:"product"`

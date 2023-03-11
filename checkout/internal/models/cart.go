@@ -4,9 +4,20 @@ type User int64
 
 type WarehouseID int64
 
+type ProductsCount uint16
+
 type Stock struct {
 	WarehouseID WarehouseID
 	Count       uint64
+}
+
+type OrderID int64
+
+type SKU uint32
+
+type CartItem struct {
+	SKU   SKU
+	Count ProductsCount
 }
 
 type Product struct {
@@ -14,18 +25,7 @@ type Product struct {
 	Price uint32
 }
 
-type OrderID int64
-
-type SKU uint32
-
-type OrderItem struct {
-	SKU   SKU
-	Count uint16
-}
-
-type CartItem struct {
-	SKU   SKU
-	Count uint16
-	Name  string
-	Price uint32
+type CartProduct struct {
+	CartItem
+	Product
 }

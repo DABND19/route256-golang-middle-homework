@@ -25,6 +25,18 @@ func DomainErrorsMiddleware(ctx context.Context, req any, info *grpc.UnaryServer
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
+	if errors.Is(err, domain.ProductNotFound) {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
+	if errors.Is(err, domain.InvalidProductsCount) {
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
+	}
+
+	if errors.Is(err, domain.CartItemNotFoundError) {
+		return nil, status.Error(codes.NotFound, err.Error())
+	}
+
 	log.Println(err)
 	return nil, status.Error(codes.Internal, "Internal server error")
 }
