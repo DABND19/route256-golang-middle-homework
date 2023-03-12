@@ -32,6 +32,9 @@ func (s *Service) CancelOrder(ctx context.Context, orderID models.OrderID) error
 		}
 
 		err = s.OrdersRespository.ChangeOrderStatus(ctx, orderID, models.OrderStatusCancelled)
+		if err != nil {
+			return err
+		}
 
 		return nil
 	})
