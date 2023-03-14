@@ -2,19 +2,21 @@ package v1
 
 import (
 	"context"
-	"errors"
-	"route256/checkout/internal/domain"
+	"route256/checkout/internal/models"
+	"route256/checkout/internal/validators"
 	apiSchema "route256/checkout/pkg/checkoutv1"
 
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 func (s *Service) AddToCart(ctx context.Context, reqPayload *apiSchema.EditCartRequest) (*emptypb.Empty, error) {
-	err := s.service.AddToCart(ctx, reqPayload.GetUser(), reqPayload.GetSku(), uint16(reqPayload.GetCount()))
-	if errors.Is(err, domain.InsufficientStocksError) {
-		return &emptypb.Empty{}, status.Error(codes.FailedPrecondition, err.Error())
+	if err := validators.ValidateProductsCount(reqPayload); err != nil {
+		return nil, err
+	}
+
+	err := s.service.AddToCart(ctx, models.User(reqPayload.User), models.SKU(reqPayload.Sku), models.ProductsCount(reqPayload.Count))
+	if err != nil {
+		return nil, err
 	}
 	return &emptypb.Empty{}, err
 }

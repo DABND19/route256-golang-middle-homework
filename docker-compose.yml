@@ -1,17 +1,74 @@
 version: "3.1"
 services:
-  checkout:
+  checkout_app:
     image: checkout
     build: ./checkout/
     ports:
       - "8080:8080"
-  loms:
+    depends_on:
+      - checkout_pgbouncer
+  checkout_postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_DB=checkout
+      - POSTGRES_PASSWORD=hackme123
+    volumes:
+      - checkout_pgdata:/var/lib/postgresql/data
+    ports:
+      - "5430:5432"
+  checkout_pgbouncer:
+    image: bitnami/pgbouncer:latest
+    environment:
+      - POSTGRESQL_USERNAME=user
+      - POSTGRESQL_PASSWORD=hackme123
+      - POSTGRESQL_DATABASE=checkout
+      - POSTGRESQL_HOST=checkout_postgres
+      - POSTGRESQL_PORT=5432
+      - PGBOUNCER_AUTH_USER=user
+      - PGBOUNCER_DATABASE=checkout
+      - PGBOUNCER_POOL_MODE=transaction
+      - PGBOUNCER_MAX_DB_CONNECTIONS=10
+    depends_on:
+      - checkout_postgres
+
+  loms_app:
     image: loms
     build: ./loms/
     ports:
       - "8081:8081"
+    depends_on:
+      - loms_pgbouncer
+  loms_postgres:
+    image: postgres:latest
+    environment:
+      - POSTGRES_USER=user
+      - POSTGRES_DB=checkout
+      - POSTGRES_PASSWORD=hackme123
+    volumes:
+      - loms_pgdata:/var/lib/postgresql/data
+    ports:
+      - "5431:5432"
+  loms_pgbouncer:
+    image: bitnami/pgbouncer:latest
+    environment:
+      - POSTGRESQL_USERNAME=user
+      - POSTGRESQL_PASSWORD=hackme123
+      - POSTGRESQL_DATABASE=loms
+      - POSTGRESQL_HOST=loms_postgres
+      - POSTGRESQL_PORT=5432
+      - PGBOUNCER_AUTH_USER=user
+      - PGBOUNCER_DATABASE=loms
+      - PGBOUNCER_POOL_MODE=transaction
+      - PGBOUNCER_MAX_DB_CONNECTIONS=10
+    depends_on:
+      - loms_postgres
   # notification:
   #   image: notification
   #   build: ./notification
   #   ports:
   #     - "8082:8082"
+
+volumes:
+  checkout_pgdata:
+  loms_pgdata:
