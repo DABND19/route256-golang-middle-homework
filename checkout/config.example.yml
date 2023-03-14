@@ -1,7 +1,7 @@
 server:
   address: ":8080"
 postgres:
-  dsn: postgres://user:hackme123@checkout_postgres:5432/checkout?sslmode=disable
+  dsn: postgres://user:hackme123@checkout_pgbouncer:6432/checkout?sslmode=disable
 externalServices:
   loms:
     url: loms:8081
