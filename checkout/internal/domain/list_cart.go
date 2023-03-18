@@ -7,6 +7,10 @@ import (
 	"github.com/pkg/errors"
 )
 
+var (
+	ProductServiceRateLimitError = errors.New("Too many requests to product service")
+)
+
 func (s *Service) ListCart(ctx context.Context, user models.User) ([]models.CartProduct, error) {
 	var cartItems []models.CartItem
 	err := s.RunReadCommited(ctx, func(ctx context.Context) error {

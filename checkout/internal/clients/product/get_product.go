@@ -11,6 +11,11 @@ import (
 )
 
 func (c *Client) GetProduct(ctx context.Context, sku models.SKU) (*models.Product, error) {
+	err := c.limiter.Wait(ctx)
+	if err != nil {
+		return nil, domain.ProductServiceRateLimitError
+	}
+
 	reqPayload := &productServiceAPI.GetProductRequest{
 		Token: c.token,
 		Sku:   uint32(sku),

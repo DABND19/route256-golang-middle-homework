@@ -22,6 +22,7 @@ type LomsServiceConfig struct {
 type ProductServiceConfig struct {
 	Url         string `yaml:"url"`
 	AccessToken string `yaml:"accessToken"`
+	RateLimit   uint16 `yaml:"rateLimit"`
 }
 
 type Config struct {

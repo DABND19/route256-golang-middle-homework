@@ -34,6 +34,7 @@ func main() {
 	productServiceClient, err := product.New(
 		config.Data.ExternalServices.Product.Url,
 		config.Data.ExternalServices.Product.AccessToken,
+		int(config.Data.ExternalServices.Product.RateLimit),
 	)
 	if err != nil {
 		log.Fatalln("Couldn't connect to product service:", err)
