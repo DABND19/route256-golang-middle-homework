@@ -2,7 +2,12 @@ package domain
 
 import (
 	"context"
+	"errors"
 	"route256/loms/internal/models"
+)
+
+var (
+	OrderAlreadyPayedError = errors.New("Order already payed")
 )
 
 func (s *Service) CancelOrder(ctx context.Context, orderID models.OrderID) error {
@@ -10,6 +15,10 @@ func (s *Service) CancelOrder(ctx context.Context, orderID models.OrderID) error
 		order, err := s.OrdersRespository.GetOrder(ctx, orderID)
 		if err != nil {
 			return err
+		}
+
+		if order.Status == models.OrderStatusPayed {
+			return OrderAlreadyPayedError
 		}
 
 		for _, item := range order.Items {

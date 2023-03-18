@@ -1,4 +1,6 @@
 server:
   address: ":8081"
+service:
+  unpaidOrderTtl: 10m
 postgres:
   dsn: postgres://user:hackme123@loms_pgbouncer:6432/loms?sslmode=disable

@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"route256/loms/internal/models"
+	"time"
 )
 
 var (
@@ -16,15 +17,23 @@ type Service struct {
 	TransactionRunner
 	OrdersRespository
 	StocksRespository
+	unpaidOrderTtl time.Duration
+	cancelOrderWp  WorkerPool
 }
 
 func New(
 	tr TransactionRunner,
 	ordersRepo OrdersRespository,
 	stocksRepo StocksRespository,
+	unpaidOrderTtl time.Duration,
+	cancelOrderWorkerPool WorkerPool,
 ) *Service {
 	return &Service{
-		tr, ordersRepo, stocksRepo,
+		tr,
+		ordersRepo,
+		stocksRepo,
+		unpaidOrderTtl,
+		cancelOrderWorkerPool,
 	}
 }
 
@@ -33,6 +42,10 @@ type TransactionRunner interface {
 	RunRepeatableRead(ctx context.Context, txFn func(ctx context.Context) error) error
 	RunSerializable(ctx context.Context, txFn func(ctx context.Context) error) error
 	RunInSavepoint(ctx context.Context, txFn func(ctx context.Context) error) error
+}
+
+type WorkerPool interface {
+	Submit(task func())
 }
 
 type OrdersRespository interface {

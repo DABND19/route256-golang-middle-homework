@@ -43,7 +43,7 @@ services:
     image: postgres:latest
     environment:
       - POSTGRES_USER=user
-      - POSTGRES_DB=checkout
+      - POSTGRES_DB=loms
       - POSTGRES_PASSWORD=hackme123
     volumes:
       - loms_pgdata:/var/lib/postgresql/data
