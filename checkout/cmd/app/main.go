@@ -13,6 +13,7 @@ import (
 	cartsRepository "route256/checkout/internal/repository/postgresql/carts"
 	apiSchema "route256/checkout/pkg/checkoutv1"
 	transactionManager "route256/libs/transactor/postgresql"
+	"route256/libs/workerpool"
 
 	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -50,7 +51,13 @@ func main() {
 
 	db := transactionManager.New(pgPool)
 	cartsRepo := cartsRepository.New(db)
-	service := domain.New(db, cartsRepo, lomsServiceClient, productServiceClient)
+	service := domain.New(
+		db,
+		cartsRepo,
+		lomsServiceClient,
+		productServiceClient,
+		workerpool.New(5),
+	)
 
 	lis, err := net.Listen("tcp", config.Data.Server.Address)
 	if err != nil {
