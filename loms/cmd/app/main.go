@@ -6,6 +6,7 @@ import (
 	"net"
 	"os"
 	"os/signal"
+	"route256/libs/scheduler"
 	transationManager "route256/libs/transactor/postgresql"
 	"route256/libs/workerpool"
 	"route256/loms/internal/config"
@@ -51,13 +52,19 @@ func main() {
 	db := transationManager.New(pgPool)
 	stocksRepo := stocksRepository.New(db)
 	ordersRepo := ordersRepository.New(db)
-	ordersCancellingWorkers := workerpool.New(5)
+	orderCancellingWorkerPool := workerpool.New(config.Data.Service.UnpaidOrdersCancellingWorkersCount)
+	defer orderCancellingWorkerPool.WaitClose()
+	orderCancellingScheduler := scheduler.New(orderCancellingWorkerPool)
+	defer func() {
+		log.Println("Waiting for all unpaid orders cancelling...")
+		orderCancellingScheduler.WaitClose()
+	}()
 	service := domain.New(
 		db,
 		ordersRepo,
 		stocksRepo,
 		config.Data.Service.UnpaidOrderTtl,
-		ordersCancellingWorkers,
+		orderCancellingScheduler,
 	)
 
 	lomsV1 := serviceAPI.New(service)
@@ -74,8 +81,4 @@ func main() {
 		log.Fatalln("Couldn't start a server:", err)
 	}
 	log.Println("Server stopped")
-
-	log.Println("Waiting for cancelling unpaid orders tasks completion...")
-	ordersCancellingWorkers.WaitClose()
-	log.Println("All unpaid orders are cancelled.")
 }

@@ -17,8 +17,8 @@ type Service struct {
 	TransactionRunner
 	OrdersRespository
 	StocksRespository
-	unpaidOrderTtl time.Duration
-	cancelOrderWp  WorkerPool
+	cancelOrderScheduler Scheduler
+	unpaidOrderTtl       time.Duration
 }
 
 func New(
@@ -26,14 +26,14 @@ func New(
 	ordersRepo OrdersRespository,
 	stocksRepo StocksRespository,
 	unpaidOrderTtl time.Duration,
-	cancelOrderWorkerPool WorkerPool,
+	cancelOrderScheduler Scheduler,
 ) *Service {
 	return &Service{
 		tr,
 		ordersRepo,
 		stocksRepo,
+		cancelOrderScheduler,
 		unpaidOrderTtl,
-		cancelOrderWorkerPool,
 	}
 }
 
@@ -44,8 +44,8 @@ type TransactionRunner interface {
 	RunInSavepoint(ctx context.Context, txFn func(ctx context.Context) error) error
 }
 
-type WorkerPool interface {
-	Submit(task func())
+type Scheduler interface {
+	Schedule(after time.Time, task func())
 }
 
 type OrdersRespository interface {

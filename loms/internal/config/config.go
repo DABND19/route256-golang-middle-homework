@@ -17,7 +17,8 @@ type ServerConfig struct {
 }
 
 type ServiceConfig struct {
-	UnpaidOrderTtl time.Duration `yaml:"unpaidOrderTtl"`
+	UnpaidOrderTtl                     time.Duration `yaml:"unpaidOrderTtl"`
+	UnpaidOrdersCancellingWorkersCount int           `yaml:"unpaidOrdersCancellingWorkersCount"`
 }
 
 type Config struct {

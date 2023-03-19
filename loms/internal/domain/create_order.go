@@ -51,28 +51,6 @@ func (s *Service) reserveItem(ctx context.Context, orderID models.OrderID, item 
 	return nil
 }
 
-func (s *Service) cancelOrderTask(orderID models.OrderID, expiredAt time.Time) {
-loop:
-	for {
-		select {
-		case <-time.After(time.Until(expiredAt)):
-			break loop
-		default:
-			time.Sleep(1 * time.Second)
-		}
-	}
-
-	err := s.CancelOrder(context.Background(), orderID)
-	if errors.Is(err, OrderAlreadyPayedError) {
-		return
-	}
-	if err != nil {
-		log.Printf("Failed to cancel order #%d, reason %s\n", orderID, err)
-		return
-	}
-	log.Printf("Order #%d cancelled\n", orderID)
-}
-
 func (s *Service) CreateOrder(
 	ctx context.Context,
 	user models.User,
@@ -116,9 +94,17 @@ func (s *Service) CreateOrder(
 		return nil, failedReservationError
 	}
 
-	orderExpiredAt := time.Now().Add(s.unpaidOrderTtl)
-	s.cancelOrderWp.Submit(func() {
-		s.cancelOrderTask(*orderID, orderExpiredAt)
+	s.cancelOrderScheduler.Schedule(time.Now().Add(s.unpaidOrderTtl), func() {
+		// Для того, чтобы никто не смог отменить задачку извне, создаем новый контекст
+		err := s.CancelOrder(context.Background(), *orderID)
+		if errors.Is(err, OrderAlreadyPayedError) {
+			return
+		}
+		if err != nil {
+			log.Printf("Failed to cancel order #%d, reason %s\n", *orderID, err)
+			return
+		}
+		log.Printf("Order #%d cancelled\n", *orderID)
 	})
 
 	return orderID, err
