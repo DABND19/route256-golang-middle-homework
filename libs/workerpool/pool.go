@@ -34,9 +34,9 @@ func New(size int) WorkerPool {
 		waitingTasks:  make([]func(), 0),
 		waitOnStop:    false,
 		stopped:       make(chan struct{}),
-		closeOnce:     &sync.Once{},
+		closeOnce:     new(sync.Once),
 		isClosed:      false,
-		isClosedMtx:   &sync.RWMutex{},
+		isClosedMtx:   new(sync.RWMutex),
 	}
 	p.bootstrap()
 	return p
@@ -45,9 +45,7 @@ func New(size int) WorkerPool {
 func (p *pool) Submit(task func()) {
 	// Избежание паники записи в закрытый канал на совести пользователя,
 	// для этого ему предоставлен метод IsClosed.
-	go func() {
-		p.tasksQueue <- task
-	}()
+	p.tasksQueue <- task
 }
 
 func (p *pool) close(wait bool) {
