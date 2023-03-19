@@ -7,10 +7,10 @@ import (
 )
 
 type Scheduler interface {
-	Schedule(after time.Time, task func())
+	Schedule(after time.Time, task func()) // Запланировать отправку задачки в worker pool после определенного момента времени.
 	IsClosed() bool
-	Close()
-	WaitClose()
+	Close()     // Закрытие без отправки запланированных задач.
+	WaitClose() // Дождаться отправки всех запланированных задач и зыкрыться.
 }
 
 type WorkerPool interface {
@@ -19,7 +19,7 @@ type WorkerPool interface {
 
 type Task struct {
 	Priority time.Time
-	Timer    <-chan time.Time
+	Timer    <-chan time.Time // Сохраняем канал, полученный из time.After, для избежания утечек памяти.
 	Callback func()
 }
 
@@ -50,11 +50,11 @@ func (pq *PriorityQueue) Pop() any {
 type scheduler struct {
 	workerPool WorkerPool
 
-	tasksQueue     chan Task
-	scheduledTasks PriorityQueue
+	tasksQueue     chan Task     // Канал между Submit и event loop'ом.
+	scheduledTasks PriorityQueue // Очередь запланированных отправок в worker pool.
 
-	stopped    chan struct{}
-	waitOnStop bool
+	stopped    chan struct{} // Сигнал остановки event loop'а.
+	waitOnStop bool          // Дождаться ли отправки всех запланированных задач.
 
 	closeOnce   *sync.Once
 	isClosed    bool
@@ -112,11 +112,14 @@ func (s *scheduler) Schedule(after time.Time, task func()) {
 
 func (s *scheduler) processScheduledTasks() bool {
 	select {
+	// Ждем пока можно будет отправить самую раннюю задачку
 	case <-s.scheduledTasks[0].Timer:
 		task := heap.Pop(&s.scheduledTasks).(Task)
 		s.workerPool.Submit(task.Callback)
 
+	// А также ждем новые задачки и кладем их в очередь.
 	case task, ok := <-s.tasksQueue:
+		// Если канал приема новых задач закрыт, то выходим из evet loop'а.
 		if !ok {
 			return false
 		}
@@ -127,19 +130,24 @@ func (s *scheduler) processScheduledTasks() bool {
 }
 
 func (s *scheduler) runEventLoop() {
+	// Отправка сигнала остановки event loop'а
 	defer close(s.stopped)
 
 eventLoop:
 	for {
+		// Если в очереди что-то есть, то разгребаем задачки.
 		if len(s.scheduledTasks) != 0 {
+			// Если канал приема новых задач закрыт, то выходим из evet loop'а.
 			if !s.processScheduledTasks() {
 				break eventLoop
 			}
 			continue eventLoop
 		}
 
+		// Если нет, то ждем, пока придут новые.
 		select {
 		case task, ok := <-s.tasksQueue:
+			// Если канал приема новых задач закрыт, то выходим из evet loop'а.
 			if !ok {
 				break eventLoop
 			}
@@ -147,6 +155,7 @@ eventLoop:
 		}
 	}
 
+	// Если надо, то дождемся отправки всех запланированных задач
 	if s.waitOnStop {
 		for len(s.scheduledTasks) != 0 {
 			select {
