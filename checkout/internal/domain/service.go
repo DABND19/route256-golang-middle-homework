@@ -11,7 +11,6 @@ type Service struct {
 	cartsRepository      CartsRepository
 	lomsServiceClient    LOMSServiceClient
 	productServiceClient ProductServiceClient
-	listCartWp           WorkerPool
 }
 
 func New(
@@ -19,14 +18,12 @@ func New(
 	cartsRepo CartsRepository,
 	lomsServiceClient LOMSServiceClient,
 	productServiceClient ProductServiceClient,
-	listCartWorkerPool WorkerPool,
 ) *Service {
 	return &Service{
 		tr,
 		cartsRepo,
 		lomsServiceClient,
 		productServiceClient,
-		listCartWorkerPool,
 	}
 }
 
@@ -36,17 +33,13 @@ var (
 	ProductNotFound       = errors.New("Product not found")
 )
 
-type WorkerPool interface {
-	Submit(task func())
-}
-
 type LOMSServiceClient interface {
 	CreateOrder(ctx context.Context, user models.User, items []models.CartItem) (*models.OrderID, error)
 	Stocks(ctx context.Context, sku models.SKU) ([]models.Stock, error)
 }
 
 type ProductServiceClient interface {
-	GetProduct(ctx context.Context, sku models.SKU) (*models.Product, error)
+	GetProducts(ctx context.Context, skus []models.SKU) (map[models.SKU]*models.Product, error)
 }
 
 type TransactionRunner interface {

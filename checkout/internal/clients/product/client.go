@@ -2,6 +2,7 @@ package product
 
 import (
 	"route256/checkout/internal/domain"
+	"route256/libs/workerpool"
 	productServiceAPI "route256/product-service/pkg/product"
 	"time"
 
@@ -10,13 +11,18 @@ import (
 	"google.golang.org/grpc/credentials/insecure"
 )
 
+type WorkerPool interface {
+	Submit(task func())
+}
+
 type Client struct {
 	productServiceClient productServiceAPI.ProductServiceClient
 	token                string
 	limiter              *rate.Limiter
+	wp                   WorkerPool
 }
 
-func New(address string, token string, rateLimit int) (domain.ProductServiceClient, error) {
+func New(address string, token string, rateLimit int, workerPool workerpool.WorkerPool) (domain.ProductServiceClient, error) {
 	cc, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		return nil, err
@@ -25,5 +31,6 @@ func New(address string, token string, rateLimit int) (domain.ProductServiceClie
 		productServiceClient: productServiceAPI.NewProductServiceClient(cc),
 		token:                token,
 		limiter:              rate.NewLimiter(rate.Every(1*time.Second), rateLimit),
+		wp:                   workerPool,
 	}, nil
 }

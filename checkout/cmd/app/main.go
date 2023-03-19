@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 	"route256/checkout/internal/clients/loms"
 	"route256/checkout/internal/clients/product"
 	"route256/checkout/internal/config"
@@ -32,16 +34,21 @@ func main() {
 		log.Fatalln("Couldn't connect to LOMS service:", err)
 	}
 
+	productServiceWorkerPool := workerpool.New(
+		config.Data.ExternalServices.Product.MaxConcurrentRequests,
+	)
+	defer productServiceWorkerPool.Close()
 	productServiceClient, err := product.New(
 		config.Data.ExternalServices.Product.Url,
 		config.Data.ExternalServices.Product.AccessToken,
 		int(config.Data.ExternalServices.Product.RateLimit),
+		productServiceWorkerPool,
 	)
 	if err != nil {
 		log.Fatalln("Couldn't connect to product service:", err)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
 	pgPool, err := pgxpool.Connect(ctx, config.Data.Postgres.DSN)
@@ -56,7 +63,6 @@ func main() {
 		cartsRepo,
 		lomsServiceClient,
 		productServiceClient,
-		workerpool.New(5),
 	)
 
 	lis, err := net.Listen("tcp", config.Data.Server.Address)
@@ -74,9 +80,14 @@ func main() {
 	checkoutV1 := serviceAPI.New(service)
 	apiSchema.RegisterCheckoutV1Server(s, checkoutV1)
 
+	go func() {
+		<-ctx.Done()
+		s.GracefulStop()
+	}()
 	log.Println("Server listen on:", lis.Addr())
 	err = s.Serve(lis)
 	if err != nil {
 		log.Fatalln("Couldn't start a server:", err)
 	}
+	log.Println("Server stopped")
 }

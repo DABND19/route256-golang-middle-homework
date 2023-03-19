@@ -9,3 +9,4 @@ externalServices:
     url: route256.pavl.uk:8082
     accessToken: test_token
     rateLimit: 10
+    maxConcurrentRequests: 5

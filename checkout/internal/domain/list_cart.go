@@ -3,7 +3,6 @@ package domain
 import (
 	"context"
 	"route256/checkout/internal/models"
-	"sync"
 
 	"github.com/pkg/errors"
 )
@@ -11,71 +10,6 @@ import (
 var (
 	ProductServiceRateLimitError = errors.New("Too many requests to product service")
 )
-
-type fetchProductTaskResult struct {
-	SKU models.SKU
-	*models.Product
-}
-
-func (s *Service) fetchProducts(
-	ctx context.Context,
-	skus []models.SKU,
-) (map[models.SKU]*models.Product, error) {
-	fetchingCtx, cancel := context.WithCancel(ctx)
-	defer cancel()
-
-	var wg sync.WaitGroup
-
-	errorsQueue := make(chan error, len(skus))
-	responsesQueue := make(chan fetchProductTaskResult, len(skus))
-	for _, sku := range skus {
-		sku := sku
-		wg.Add(1)
-		s.listCartWp.Submit(func() {
-			product, err := s.productServiceClient.GetProduct(fetchingCtx, sku)
-			if err != nil {
-				errorsQueue <- err
-				return
-			}
-			responsesQueue <- fetchProductTaskResult{sku, product}
-		})
-	}
-
-	var fetchingErr error
-	products := make(map[models.SKU]*models.Product, len(skus))
-	go func() {
-	loop:
-		for {
-			select {
-			case res, ok := <-responsesQueue:
-				if !ok {
-					break loop
-				}
-				wg.Done()
-				products[res.SKU] = res.Product
-
-			case err, ok := <-errorsQueue:
-				if !ok {
-					break loop
-				}
-				wg.Done()
-				if errors.Is(err, ProductNotFound) {
-					continue
-				}
-				if fetchingErr == nil {
-					fetchingErr = err
-					cancel()
-				}
-			}
-		}
-	}()
-
-	wg.Wait()
-	close(responsesQueue)
-	close(errorsQueue)
-
-	return products, fetchingErr
-}
 
 func (s *Service) ListCart(ctx context.Context, user models.User) ([]models.CartProduct, error) {
 	var cartItems []models.CartItem
@@ -96,7 +30,7 @@ func (s *Service) ListCart(ctx context.Context, user models.User) ([]models.Cart
 	for _, item := range cartItems {
 		skus = append(skus, item.SKU)
 	}
-	fetchedProducts, err := s.fetchProducts(ctx, skus)
+	fetchedProducts, err := s.productServiceClient.GetProducts(ctx, skus)
 	if err != nil {
 		return nil, err
 	}
