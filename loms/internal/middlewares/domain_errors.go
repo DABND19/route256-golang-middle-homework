@@ -29,6 +29,10 @@ func DomainErrorsMiddleware(ctx context.Context, req any, info *grpc.UnaryServer
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
+	if errors.Is(err, domain.OrderAlreadyPayedError) {
+		return nil, status.Error(codes.FailedPrecondition, err.Error())
+	}
+
 	log.Println(err)
 	return nil, status.Error(codes.Internal, "Internal server error")
 }

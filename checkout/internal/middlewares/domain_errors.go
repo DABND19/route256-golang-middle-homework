@@ -37,6 +37,10 @@ func DomainErrorsMiddleware(ctx context.Context, req any, info *grpc.UnaryServer
 		return nil, status.Error(codes.NotFound, err.Error())
 	}
 
+	if errors.Is(err, domain.ProductServiceRateLimitError) {
+		return nil, status.Error(codes.ResourceExhausted, err.Error())
+	}
+
 	log.Println(err)
 	return nil, status.Error(codes.Internal, "Internal server error")
 }

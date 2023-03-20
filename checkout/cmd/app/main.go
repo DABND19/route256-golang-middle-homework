@@ -4,6 +4,8 @@ import (
 	"context"
 	"log"
 	"net"
+	"os"
+	"os/signal"
 	"route256/checkout/internal/clients/loms"
 	"route256/checkout/internal/clients/product"
 	"route256/checkout/internal/config"
@@ -13,6 +15,7 @@ import (
 	cartsRepository "route256/checkout/internal/repository/postgresql/carts"
 	apiSchema "route256/checkout/pkg/checkoutv1"
 	transactionManager "route256/libs/transactor/postgresql"
+	"route256/libs/workerpool"
 
 	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/jackc/pgx/v4/pgxpool"
@@ -31,15 +34,21 @@ func main() {
 		log.Fatalln("Couldn't connect to LOMS service:", err)
 	}
 
+	productServiceWorkerPool := workerpool.New(
+		config.Data.ExternalServices.Product.MaxConcurrentRequests,
+	)
+	defer productServiceWorkerPool.Close()
 	productServiceClient, err := product.New(
 		config.Data.ExternalServices.Product.Url,
 		config.Data.ExternalServices.Product.AccessToken,
+		int(config.Data.ExternalServices.Product.RateLimit),
+		productServiceWorkerPool,
 	)
 	if err != nil {
 		log.Fatalln("Couldn't connect to product service:", err)
 	}
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
 	pgPool, err := pgxpool.Connect(ctx, config.Data.Postgres.DSN)
@@ -49,7 +58,12 @@ func main() {
 
 	db := transactionManager.New(pgPool)
 	cartsRepo := cartsRepository.New(db)
-	service := domain.New(db, cartsRepo, lomsServiceClient, productServiceClient)
+	service := domain.New(
+		db,
+		cartsRepo,
+		lomsServiceClient,
+		productServiceClient,
+	)
 
 	lis, err := net.Listen("tcp", config.Data.Server.Address)
 	if err != nil {
@@ -66,9 +80,14 @@ func main() {
 	checkoutV1 := serviceAPI.New(service)
 	apiSchema.RegisterCheckoutV1Server(s, checkoutV1)
 
+	go func() {
+		<-ctx.Done()
+		s.GracefulStop()
+	}()
 	log.Println("Server listen on:", lis.Addr())
 	err = s.Serve(lis)
 	if err != nil {
 		log.Fatalln("Couldn't start a server:", err)
 	}
+	log.Println("Server stopped")
 }

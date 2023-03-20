@@ -2,6 +2,7 @@ package config
 
 import (
 	"os"
+	"time"
 
 	"github.com/pkg/errors"
 	"gopkg.in/yaml.v3"
@@ -15,8 +16,14 @@ type ServerConfig struct {
 	Address string `yaml:"address"`
 }
 
+type ServiceConfig struct {
+	UnpaidOrderTtl                     time.Duration `yaml:"unpaidOrderTtl"`
+	UnpaidOrdersCancellingWorkersCount int           `yaml:"unpaidOrdersCancellingWorkersCount"`
+}
+
 type Config struct {
 	Server   ServerConfig   `yaml:"server"`
+	Service  ServiceConfig  `yaml:"service"`
 	Postgres PostgresConfig `yaml:"postgres"`
 }
 

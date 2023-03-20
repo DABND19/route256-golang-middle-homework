@@ -20,8 +20,10 @@ type LomsServiceConfig struct {
 }
 
 type ProductServiceConfig struct {
-	Url         string `yaml:"url"`
-	AccessToken string `yaml:"accessToken"`
+	Url                   string `yaml:"url"`
+	AccessToken           string `yaml:"accessToken"`
+	RateLimit             uint16 `yaml:"rateLimit"`
+	MaxConcurrentRequests int    `yaml:"maxConcurrentRequests"`
 }
 
 type Config struct {

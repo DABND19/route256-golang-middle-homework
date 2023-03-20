@@ -4,7 +4,11 @@ import (
 	"context"
 	"log"
 	"net"
+	"os"
+	"os/signal"
+	"route256/libs/scheduler"
 	transationManager "route256/libs/transactor/postgresql"
+	"route256/libs/workerpool"
 	"route256/loms/internal/config"
 	"route256/loms/internal/domain"
 	serviceAPI "route256/loms/internal/handlers/v1"
@@ -37,7 +41,7 @@ func main() {
 	)
 	reflection.Register(s)
 
-	ctx, cancel := context.WithCancel(context.Background())
+	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
 	pgPool, err := pgxpool.Connect(ctx, config.Data.Postgres.DSN)
@@ -48,14 +52,33 @@ func main() {
 	db := transationManager.New(pgPool)
 	stocksRepo := stocksRepository.New(db)
 	ordersRepo := ordersRepository.New(db)
-	service := domain.New(db, ordersRepo, stocksRepo)
+	orderCancellingWorkerPool := workerpool.New(config.Data.Service.UnpaidOrdersCancellingWorkersCount)
+	defer orderCancellingWorkerPool.WaitClose()
+	orderCancellingScheduler := scheduler.New(orderCancellingWorkerPool)
+	defer func() {
+		log.Println("Waiting for all unpaid orders cancelling...")
+		orderCancellingScheduler.WaitClose()
+	}()
+	service := domain.New(
+		db,
+		ordersRepo,
+		stocksRepo,
+		config.Data.Service.UnpaidOrderTtl,
+		orderCancellingScheduler,
+	)
 
 	lomsV1 := serviceAPI.New(service)
 	apiSchema.RegisterLomsV1Server(s, lomsV1)
 
 	log.Println("Server listen on", lis.Addr())
 
+	go func() {
+		<-ctx.Done()
+		s.GracefulStop()
+	}()
+
 	if err := s.Serve(lis); err != nil {
 		log.Fatalln("Couldn't start a server:", err)
 	}
+	log.Println("Server stopped")
 }

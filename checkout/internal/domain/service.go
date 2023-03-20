@@ -39,7 +39,7 @@ type LOMSServiceClient interface {
 }
 
 type ProductServiceClient interface {
-	GetProduct(ctx context.Context, sku models.SKU) (*models.Product, error)
+	GetProducts(ctx context.Context, skus []models.SKU) (map[models.SKU]*models.Product, error)
 }
 
 type TransactionRunner interface {

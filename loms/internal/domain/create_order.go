@@ -3,8 +3,10 @@ package domain
 import (
 	"context"
 	"errors"
+	"log"
 	"route256/loms/internal/models"
 	"sort"
+	"time"
 )
 
 func (s *Service) reserveItem(ctx context.Context, orderID models.OrderID, item models.OrderItem) error {
@@ -91,6 +93,19 @@ func (s *Service) CreateOrder(
 	if failedReservationError != nil {
 		return nil, failedReservationError
 	}
+
+	s.cancelOrderScheduler.Schedule(time.Now().Add(s.unpaidOrderTtl), func() {
+		// Для того, чтобы никто не смог отменить задачку извне, создаем новый контекст
+		err := s.CancelOrder(context.Background(), *orderID)
+		if errors.Is(err, OrderAlreadyPayedError) {
+			return
+		}
+		if err != nil {
+			log.Printf("Failed to cancel order #%d, reason %s\n", *orderID, err)
+			return
+		}
+		log.Printf("Order #%d cancelled\n", *orderID)
+	})
 
 	return orderID, err
 }
