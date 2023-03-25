@@ -51,8 +51,9 @@ func TestPurchase(t *testing.T) {
 	}
 
 	var (
-		cartsRepoError   = errors.New("Some cart item repo error")
-		transactionError = errors.New("Some transaction error")
+		getCartItemsError      = errors.New("Get cart items error")
+		deleteCartItemError    = errors.New("Delete cart item error")
+		transactionRunnerError = errors.New("Some transaction runner error")
 	)
 
 	tests := []struct {
@@ -78,13 +79,13 @@ func TestPurchase(t *testing.T) {
 		{
 			Name:           "get cart item repo error",
 			ExpectedResult: orderIDMock,
-			ExpectedErr:    cartsRepoError,
+			ExpectedErr:    getCartItemsError,
 			Tr:             defaultTrMock,
-			ExpectedTxErr:  cartsRepoError,
+			ExpectedTxErr:  getCartItemsError,
 			LOMSClient:     defaultLomsClientMock,
 			CartsRepo: func(mc *minimock.Controller) *cartsRepoMock.CartsRepositoryMock {
 				cartsRepo := cartsRepoMock.NewCartsRepositoryMock(mc)
-				cartsRepo = cartsRepo.GetCartItemsMock.Return(nil, cartsRepoError)
+				cartsRepo = cartsRepo.GetCartItemsMock.Return(nil, getCartItemsError)
 				return cartsRepo
 			},
 			ExpectedDeleteCartItemCallsCount: 0,
@@ -106,14 +107,14 @@ func TestPurchase(t *testing.T) {
 		{
 			Name:           "delete cart item repo error",
 			ExpectedResult: orderIDMock,
-			ExpectedErr:    cartsRepoError,
+			ExpectedErr:    deleteCartItemError,
 			Tr:             defaultTrMock,
-			ExpectedTxErr:  cartsRepoError,
+			ExpectedTxErr:  deleteCartItemError,
 			LOMSClient:     defaultLomsClientMock,
 			CartsRepo: func(mc *minimock.Controller) *cartsRepoMock.CartsRepositoryMock {
 				cartsRepo := cartsRepoMock.NewCartsRepositoryMock(mc)
 				cartsRepo = cartsRepo.GetCartItemsMock.Return(cartItemsMock, nil)
-				cartsRepo = cartsRepo.DeleteCartItemMock.Return(cartsRepoError)
+				cartsRepo = cartsRepo.DeleteCartItemMock.Return(deleteCartItemError)
 				return cartsRepo
 			},
 			ExpectedDeleteCartItemCallsCount: 1,
@@ -121,7 +122,7 @@ func TestPurchase(t *testing.T) {
 		{
 			Name:           "transaction error",
 			ExpectedResult: orderIDMock,
-			ExpectedErr:    transactionError,
+			ExpectedErr:    transactionRunnerError,
 			Tr: func(mc *minimock.Controller, expectedTxErr error) *trMock.TransactionRunnerMock {
 				tr := trMock.NewTransactionRunnerMock(mc)
 				tr = tr.RunSerializableMock.Inspect(func(ctx context.Context, txFn func(ctx context.Context) error) {
@@ -131,7 +132,7 @@ func TestPurchase(t *testing.T) {
 					} else {
 						require.Equal(mc, nil, err)
 					}
-				}).Return(transactionError)
+				}).Return(transactionRunnerError)
 				return tr
 			},
 			ExpectedTxErr:                    nil,
