@@ -16,18 +16,22 @@ import (
 )
 
 func TestPurchase(t *testing.T) {
-	ctx := context.Background()
-
 	userIDMock := models.User(gofakeit.Int64())
 	cartItemsMock := make([]models.CartItem, 10)
 	gofakeit.Slice(&cartItemsMock)
 	orderIDMock := new(models.OrderID)
 	*orderIDMock = models.OrderID(gofakeit.Int64())
 
-	defaultTrMock := func(mc *minimock.Controller) *trMock.TransactionRunnerMock {
+	defaultTrMock := func(mc *minimock.Controller, expectedTxErr error) *trMock.TransactionRunnerMock {
 		return trMock.NewTransactionRunnerMock(mc).RunSerializableMock.Set(
-			func(ctx context.Context, txFn func(ctx context.Context) error) (err error) {
-				return txFn(ctx)
+			func(ctx context.Context, txFn func(ctx context.Context) error) error {
+				err := txFn(ctx)
+				if expectedTxErr != nil {
+					require.ErrorIs(mc, expectedTxErr, err)
+				} else {
+					require.Equal(mc, nil, err)
+				}
+				return err
 			},
 		)
 	}
@@ -55,7 +59,8 @@ func TestPurchase(t *testing.T) {
 		Name                             string
 		ExpectedResult                   *models.OrderID
 		ExpectedErr                      error
-		Tr                               func(mc *minimock.Controller) *trMock.TransactionRunnerMock
+		Tr                               func(mc *minimock.Controller, expectedTxErr error) *trMock.TransactionRunnerMock
+		ExpectedTxErr                    error
 		LOMSClient                       func(mc *minimock.Controller) *lomsClientMock.LOMSServiceClientMock
 		CartsRepo                        func(mc *minimock.Controller) *cartsRepoMock.CartsRepositoryMock
 		ExpectedDeleteCartItemCallsCount uint64
@@ -65,6 +70,7 @@ func TestPurchase(t *testing.T) {
 			ExpectedResult:                   orderIDMock,
 			ExpectedErr:                      nil,
 			Tr:                               defaultTrMock,
+			ExpectedTxErr:                    nil,
 			LOMSClient:                       defaultLomsClientMock,
 			CartsRepo:                        defaultCartRepoMock,
 			ExpectedDeleteCartItemCallsCount: uint64(len(cartItemsMock)),
@@ -74,6 +80,7 @@ func TestPurchase(t *testing.T) {
 			ExpectedResult: orderIDMock,
 			ExpectedErr:    cartsRepoError,
 			Tr:             defaultTrMock,
+			ExpectedTxErr:  cartsRepoError,
 			LOMSClient:     defaultLomsClientMock,
 			CartsRepo: func(mc *minimock.Controller) *cartsRepoMock.CartsRepositoryMock {
 				cartsRepo := cartsRepoMock.NewCartsRepositoryMock(mc)
@@ -87,6 +94,7 @@ func TestPurchase(t *testing.T) {
 			ExpectedResult: orderIDMock,
 			ExpectedErr:    OrderCreationError,
 			Tr:             defaultTrMock,
+			ExpectedTxErr:  OrderCreationError,
 			LOMSClient: func(mc *minimock.Controller) *lomsClientMock.LOMSServiceClientMock {
 				lomsClient := lomsClientMock.NewLOMSServiceClientMock(mc)
 				lomsClient.CreateOrderMock.Return(nil, OrderCreationError)
@@ -100,6 +108,7 @@ func TestPurchase(t *testing.T) {
 			ExpectedResult: orderIDMock,
 			ExpectedErr:    cartsRepoError,
 			Tr:             defaultTrMock,
+			ExpectedTxErr:  cartsRepoError,
 			LOMSClient:     defaultLomsClientMock,
 			CartsRepo: func(mc *minimock.Controller) *cartsRepoMock.CartsRepositoryMock {
 				cartsRepo := cartsRepoMock.NewCartsRepositoryMock(mc)
@@ -113,14 +122,19 @@ func TestPurchase(t *testing.T) {
 			Name:           "transaction error",
 			ExpectedResult: orderIDMock,
 			ExpectedErr:    transactionError,
-			Tr: func(mc *minimock.Controller) *trMock.TransactionRunnerMock {
+			Tr: func(mc *minimock.Controller, expectedTxErr error) *trMock.TransactionRunnerMock {
 				tr := trMock.NewTransactionRunnerMock(mc)
 				tr = tr.RunSerializableMock.Inspect(func(ctx context.Context, txFn func(ctx context.Context) error) {
 					err := txFn(ctx)
-					require.Equal(mc, nil, err)
+					if expectedTxErr != nil {
+						require.ErrorIs(mc, expectedTxErr, err)
+					} else {
+						require.Equal(mc, nil, err)
+					}
 				}).Return(transactionError)
 				return tr
 			},
+			ExpectedTxErr:                    nil,
 			LOMSClient:                       defaultLomsClientMock,
 			CartsRepo:                        defaultCartRepoMock,
 			ExpectedDeleteCartItemCallsCount: uint64(len(cartItemsMock)),
@@ -131,12 +145,12 @@ func TestPurchase(t *testing.T) {
 			mc := minimock.NewController(t)
 			cartsRepo := testCase.CartsRepo(mc)
 			s := New(
-				testCase.Tr(mc),
+				testCase.Tr(mc, testCase.ExpectedTxErr),
 				cartsRepo,
 				testCase.LOMSClient(mc),
 				productClientMock.NewProductServiceClientMock(mc),
 			)
-			orderID, err := s.MakePurchase(ctx, userIDMock)
+			orderID, err := s.MakePurchase(context.Background(), userIDMock)
 			if testCase.ExpectedErr != nil {
 				require.ErrorIs(t, err, testCase.ExpectedErr)
 			} else {

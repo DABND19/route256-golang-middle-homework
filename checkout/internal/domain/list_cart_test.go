@@ -44,10 +44,16 @@ func TestListCart(t *testing.T) {
 		transactionError   = errors.New("Some transaction error")
 	)
 
-	defaultTrMock := func(mc *minimock.Controller) TransactionRunner {
+	defaultTrMock := func(mc *minimock.Controller, expectedTxErr error) TransactionRunner {
 		return trMock.NewTransactionRunnerMock(mc).RunReadCommitedMock.Set(
-			func(ctx context.Context, txFn func(ctx context.Context) error) (err error) {
-				return txFn(ctx)
+			func(ctx context.Context, txFn func(ctx context.Context) error) error {
+				err := txFn(ctx)
+				if expectedTxErr != nil {
+					require.ErrorIs(mc, expectedTxErr, err)
+				} else {
+					require.Equal(mc, nil, err)
+				}
+				return err
 			},
 		)
 	}
@@ -62,7 +68,8 @@ func TestListCart(t *testing.T) {
 		Name           string
 		ExpectedResult []models.CartProduct
 		ExpectedErr    error
-		Tr             func(mc *minimock.Controller) TransactionRunner
+		Tr             func(mc *minimock.Controller, expectedTxErr error) TransactionRunner
+		ExpectedTxErr  error
 		CartsRepo      func(mc *minimock.Controller) CartsRepository
 		ProductClient  func(mc *minimock.Controller) ProductServiceClient
 	}{
@@ -71,6 +78,7 @@ func TestListCart(t *testing.T) {
 			ExpectedResult: expectedCart,
 			ExpectedErr:    nil,
 			Tr:             defaultTrMock,
+			ExpectedTxErr:  nil,
 			CartsRepo:      defaultCartsRepoMock,
 			ProductClient:  defaultProductClientMock,
 		},
@@ -79,6 +87,7 @@ func TestListCart(t *testing.T) {
 			ExpectedResult: expectedCartWithMissedProduct,
 			ExpectedErr:    nil,
 			Tr:             defaultTrMock,
+			ExpectedTxErr:  nil,
 			CartsRepo:      defaultCartsRepoMock,
 			ProductClient: func(mc *minimock.Controller) ProductServiceClient {
 				return productClientMock.NewProductServiceClientMock(mc).GetProductsMock.Return(missedProductsMock, nil)
@@ -89,6 +98,7 @@ func TestListCart(t *testing.T) {
 			ExpectedResult: nil,
 			ExpectedErr:    cartsRepoError,
 			Tr:             defaultTrMock,
+			ExpectedTxErr:  cartsRepoError,
 			CartsRepo: func(mc *minimock.Controller) CartsRepository {
 				return cartsRepoMock.NewCartsRepositoryMock(mc).GetCartItemsMock.Return(nil, cartsRepoError)
 			},
@@ -99,6 +109,7 @@ func TestListCart(t *testing.T) {
 			ExpectedResult: nil,
 			ExpectedErr:    productClientError,
 			Tr:             defaultTrMock,
+			ExpectedTxErr:  nil,
 			CartsRepo:      defaultCartsRepoMock,
 			ProductClient: func(mc *minimock.Controller) ProductServiceClient {
 				return productClientMock.NewProductServiceClientMock(mc).GetProductsMock.Return(nil, productClientError)
@@ -108,9 +119,19 @@ func TestListCart(t *testing.T) {
 			Name:           "transaction runner error",
 			ExpectedResult: nil,
 			ExpectedErr:    transactionError,
-			Tr: func(mc *minimock.Controller) TransactionRunner {
-				return trMock.NewTransactionRunnerMock(mc).RunReadCommitedMock.Return(transactionError)
+			Tr: func(mc *minimock.Controller, expectedTxError error) TransactionRunner {
+				return trMock.NewTransactionRunnerMock(mc).RunReadCommitedMock.Inspect(
+					func(ctx context.Context, txFn func(ctx context.Context) error) {
+						err := txFn(ctx)
+						if expectedTxError != nil {
+							require.ErrorIs(mc, err, expectedTxError)
+						} else {
+							require.Equal(mc, nil, err)
+						}
+					},
+				).Return(transactionError)
 			},
+			ExpectedTxErr: nil,
 			CartsRepo:     defaultCartsRepoMock,
 			ProductClient: defaultProductClientMock,
 		},
@@ -120,7 +141,7 @@ func TestListCart(t *testing.T) {
 		t.Run(testCase.Name, func(t *testing.T) {
 			mc := minimock.NewController(t)
 			s := New(
-				testCase.Tr(mc),
+				testCase.Tr(mc, testCase.ExpectedTxErr),
 				testCase.CartsRepo(mc),
 				lomsClientMock.NewLOMSServiceClientMock(mc),
 				testCase.ProductClient(mc),
