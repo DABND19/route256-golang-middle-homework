@@ -16,6 +16,8 @@ import (
 )
 
 func TestPurchase(t *testing.T) {
+	t.Parallel()
+
 	userIDMock := models.User(gofakeit.Int64())
 	cartItemsMock := make([]models.CartItem, 10)
 	gofakeit.Slice(&cartItemsMock)
@@ -142,7 +144,9 @@ func TestPurchase(t *testing.T) {
 		},
 	}
 	for _, testCase := range tests {
+		testCase := testCase
 		t.Run(testCase.Name, func(t *testing.T) {
+			t.Parallel()
 			mc := minimock.NewController(t)
 			cartsRepo := testCase.CartsRepo(mc)
 			s := New(

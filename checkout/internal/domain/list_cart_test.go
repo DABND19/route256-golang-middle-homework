@@ -16,6 +16,8 @@ import (
 )
 
 func TestListCart(t *testing.T) {
+	t.Parallel()
+
 	// data for success scenario
 	expectedCart := make([]models.CartProduct, 10)
 	gofakeit.Slice(&expectedCart)
@@ -138,7 +140,9 @@ func TestListCart(t *testing.T) {
 	}
 
 	for _, testCase := range tests {
+		testCase := testCase
 		t.Run(testCase.Name, func(t *testing.T) {
+			t.Parallel()
 			mc := minimock.NewController(t)
 			s := New(
 				testCase.Tr(mc, testCase.ExpectedTxErr),
@@ -158,6 +162,8 @@ func TestListCart(t *testing.T) {
 }
 
 func TestCalculateTotalPrice(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		Name           string
 		CartItems      []models.CartProduct
@@ -206,7 +212,9 @@ func TestCalculateTotalPrice(t *testing.T) {
 		},
 	}
 	for _, testCase := range tests {
+		testCase := testCase
 		t.Run(testCase.Name, func(t *testing.T) {
+			t.Parallel()
 			mc := minimock.NewController(t)
 			s := New(
 				trMock.NewTransactionRunnerMock(mc),
