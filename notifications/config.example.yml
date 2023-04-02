@@ -1,0 +1,5 @@
+brokers:
+  - notifications_kafka_broker1:29091
+  - notifications_kafka_broker2:29092
+  - notifications_kafka_broker3:29093
+orderStatusChangeNotificationsTopicName: order-status-change-notifications

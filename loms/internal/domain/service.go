@@ -17,6 +17,7 @@ type Service struct {
 	TransactionRunner
 	OrdersRespository
 	StocksRespository
+	NotificationsClient
 	cancelOrderScheduler Scheduler
 	unpaidOrderTtl       time.Duration
 }
@@ -27,11 +28,13 @@ func New(
 	stocksRepo StocksRespository,
 	unpaidOrderTtl time.Duration,
 	cancelOrderScheduler Scheduler,
+	orderStatusChangeNotifier NotificationsClient,
 ) *Service {
 	return &Service{
 		tr,
 		ordersRepo,
 		stocksRepo,
+		orderStatusChangeNotifier,
 		cancelOrderScheduler,
 		unpaidOrderTtl,
 	}
@@ -61,4 +64,8 @@ type StocksRespository interface {
 	GetItemBookings(ctx context.Context, orderID models.OrderID, sku models.SKU) ([]models.ItemBooking, error)
 	CreateItemBooking(ctx context.Context, orderID models.OrderID, warehouseID models.WarehouseID, sku models.SKU, count uint16) error
 	DeleteItemBooking(ctx context.Context, orderID models.OrderID, warehouseID models.WarehouseID, sku models.SKU) error
+}
+
+type NotificationsClient interface {
+	NotifyAboutOrderStatusChange(ctx context.Context, orderID models.OrderID, orderStatus models.OrderStatus)
 }

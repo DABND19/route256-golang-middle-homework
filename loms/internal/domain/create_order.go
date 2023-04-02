@@ -58,12 +58,20 @@ func (s *Service) CreateOrder(
 ) (*models.OrderID, error) {
 	var orderID *models.OrderID
 	var failedReservationError error
+	callbacks := make([]func(), 0)
 	err := s.RunSerializable(ctx, func(ctx context.Context) error {
 		var err error
 		orderID, err = s.OrdersRespository.CreateOrder(ctx, user, items)
 		if err != nil {
 			return err
 		}
+		callbacks = append(callbacks, func() {
+			s.NotificationsClient.NotifyAboutOrderStatusChange(
+				ctx,
+				*orderID,
+				models.OrderStatusNew,
+			)
+		})
 
 		failedReservationError = s.RunInSavepoint(ctx, func(ctx context.Context) error {
 			for _, item := range items {
@@ -87,11 +95,20 @@ func (s *Service) CreateOrder(
 		if err != nil {
 			return err
 		}
+		callbacks = append(callbacks, func() {
+			s.NotificationsClient.NotifyAboutOrderStatusChange(ctx, *orderID, newOrderStatus)
+		})
 
 		return nil
 	})
+	for _, cb := range callbacks {
+		cb()
+	}
 	if failedReservationError != nil {
 		return nil, failedReservationError
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	s.cancelOrderScheduler.Schedule(time.Now().Add(s.unpaidOrderTtl), func() {

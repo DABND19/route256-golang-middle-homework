@@ -3,82 +3,18 @@ package main
 import (
 	"context"
 	"log"
-	"net"
 	"os"
 	"os/signal"
-	"route256/libs/scheduler"
-	transationManager "route256/libs/transactor/postgresql"
-	"route256/libs/workerpool"
-	"route256/loms/internal/config"
-	"route256/loms/internal/domain"
-	serviceAPI "route256/loms/internal/handlers/v1"
-	"route256/loms/internal/middlewares"
-	ordersRepository "route256/loms/internal/repository/postgresql/orders"
-	stocksRepository "route256/loms/internal/repository/postgresql/stocks"
-	apiSchema "route256/loms/pkg/lomsv1"
-
-	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
+	"route256/loms/internal/app"
 )
 
 func main() {
-	err := config.Load("config.yml")
-	if err != nil {
-		log.Fatalln("Failed to load config:", err)
-	}
-
-	lis, err := net.Listen("tcp", config.Data.Server.Address)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	s := grpc.NewServer(
-		grpc.UnaryInterceptor(
-			grpcMiddleware.ChainUnaryServer(middlewares.DomainErrorsMiddleware),
-		),
-	)
-	reflection.Register(s)
-
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	pgPool, err := pgxpool.Connect(ctx, config.Data.Postgres.DSN)
-	if err != nil {
-		log.Fatalln(err)
+	application := app.New(ctx)
+	if err := application.Run(ctx); err != nil {
+		log.Fatalln("Couldn't run the application:", err)
 	}
-
-	db := transationManager.New(pgPool)
-	stocksRepo := stocksRepository.New(db)
-	ordersRepo := ordersRepository.New(db)
-	orderCancellingWorkerPool := workerpool.New(config.Data.Service.UnpaidOrdersCancellingWorkersCount)
-	defer orderCancellingWorkerPool.WaitClose()
-	orderCancellingScheduler := scheduler.New(orderCancellingWorkerPool)
-	defer func() {
-		log.Println("Waiting for all unpaid orders cancelling...")
-		orderCancellingScheduler.WaitClose()
-	}()
-	service := domain.New(
-		db,
-		ordersRepo,
-		stocksRepo,
-		config.Data.Service.UnpaidOrderTtl,
-		orderCancellingScheduler,
-	)
-
-	lomsV1 := serviceAPI.New(service)
-	apiSchema.RegisterLomsV1Server(s, lomsV1)
-
-	log.Println("Server listen on", lis.Addr())
-
-	go func() {
-		<-ctx.Done()
-		s.GracefulStop()
-	}()
-
-	if err := s.Serve(lis); err != nil {
-		log.Fatalln("Couldn't start a server:", err)
-	}
-	log.Println("Server stopped")
+	log.Println("Application stopped.")
 }

@@ -11,7 +11,7 @@ var (
 )
 
 func (s *Service) CancelOrder(ctx context.Context, orderID models.OrderID) error {
-	return s.RunSerializable(ctx, func(ctx context.Context) error {
+	err := s.RunSerializable(ctx, func(ctx context.Context) error {
 		order, err := s.OrdersRespository.GetOrder(ctx, orderID)
 		if err != nil {
 			return err
@@ -47,4 +47,11 @@ func (s *Service) CancelOrder(ctx context.Context, orderID models.OrderID) error
 
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	s.NotificationsClient.NotifyAboutOrderStatusChange(ctx, orderID, models.OrderStatusCancelled)
+
+	return nil
 }
