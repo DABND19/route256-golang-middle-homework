@@ -26,7 +26,7 @@ func (s *Service) OrderPayed(ctx context.Context, orderID models.OrderID) error 
 			}
 		}
 
-		err = s.OrdersRespository.ChangeOrderStatus(ctx, orderID, models.OrderStatusPayed)
+		err = s.changeOrderStatus(ctx, orderID, models.OrderStatusPayed)
 		if err != nil {
 			return err
 		}
@@ -36,8 +36,6 @@ func (s *Service) OrderPayed(ctx context.Context, orderID models.OrderID) error 
 	if err != nil {
 		return err
 	}
-
-	s.NotificationsClient.NotifyAboutOrderStatusChange(ctx, orderID, models.OrderStatusPayed)
 
 	return nil
 }

@@ -40,7 +40,7 @@ func (s *Service) CancelOrder(ctx context.Context, orderID models.OrderID) error
 			}
 		}
 
-		err = s.OrdersRespository.ChangeOrderStatus(ctx, orderID, models.OrderStatusCancelled)
+		err = s.changeOrderStatus(ctx, orderID, models.OrderStatusCancelled)
 		if err != nil {
 			return err
 		}
@@ -50,8 +50,6 @@ func (s *Service) CancelOrder(ctx context.Context, orderID models.OrderID) error
 	if err != nil {
 		return err
 	}
-
-	s.NotificationsClient.NotifyAboutOrderStatusChange(ctx, orderID, models.OrderStatusCancelled)
 
 	return nil
 }

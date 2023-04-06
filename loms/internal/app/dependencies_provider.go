@@ -10,6 +10,7 @@ import (
 	"route256/loms/internal/config"
 	"route256/loms/internal/domain"
 	ordersRepo "route256/loms/internal/repository/postgresql/orders"
+	ordersStatusChangesRepo "route256/loms/internal/repository/postgresql/ordersstatuschanges"
 	stocksRepo "route256/loms/internal/repository/postgresql/stocks"
 
 	"github.com/Shopify/sarama"
@@ -21,14 +22,14 @@ type DependenciesProvider struct {
 
 	txManager *txm.TransactionManager
 
-	ordersRepository domain.OrdersRespository
-	stocksRepository domain.StocksRespository
+	ordersRepository              domain.OrdersRespository
+	stocksRepository              domain.StocksRespository
+	ordersStatusChangesRepository domain.OrderStatusChangeRepository
 
 	ordersCancellingWorkerPool workerpool.WorkerPool
 	ordersCancellingScheduler  scheduler.Scheduler
 
 	notificationsSyncProducer sarama.SyncProducer
-	notificationsWorkerPool   workerpool.WorkerPool
 	notificationsClient       domain.NotificationsClient
 
 	lomsService *domain.Service
@@ -73,6 +74,13 @@ func (dp *DependenciesProvider) GetStocksRepository(ctx context.Context) domain.
 	return dp.stocksRepository
 }
 
+func (dp *DependenciesProvider) GetOrdersStatusChangesRepository(ctx context.Context) domain.OrderStatusChangeRepository {
+	if dp.ordersStatusChangesRepository == nil {
+		dp.ordersStatusChangesRepository = ordersStatusChangesRepo.New(dp.GetTransationManager(ctx))
+	}
+	return dp.ordersStatusChangesRepository
+}
+
 func (dp *DependenciesProvider) GetOrdersCancellingWorkerPool() workerpool.WorkerPool {
 	if dp.ordersCancellingWorkerPool == nil {
 		dp.ordersCancellingWorkerPool = workerpool.New(config.Data.Service.UnpaidOrdersCancellingWorkersCount)
@@ -105,19 +113,11 @@ func (dp *DependenciesProvider) GetNotificationsSyncProducer() sarama.SyncProduc
 	return dp.notificationsSyncProducer
 }
 
-func (dp *DependenciesProvider) GetNotificationsWorkerPool() workerpool.WorkerPool {
-	if dp.notificationsWorkerPool == nil {
-		dp.notificationsWorkerPool = workerpool.New(config.Data.ExternalServices.NotificationsService.MaxWorkers)
-	}
-	return dp.notificationsWorkerPool
-}
-
 func (dp *DependenciesProvider) GetNotificationsClient() domain.NotificationsClient {
 	if dp.notificationsClient == nil {
 		dp.notificationsClient = notificationsClient.New(
 			dp.GetNotificationsSyncProducer(),
 			config.Data.ExternalServices.NotificationsService.OrderStatusChangeNotificationsTopicName,
-			dp.GetNotificationsWorkerPool(),
 		)
 	}
 	return dp.notificationsClient
@@ -126,12 +126,15 @@ func (dp *DependenciesProvider) GetNotificationsClient() domain.NotificationsCli
 func (dp *DependenciesProvider) GetLOMSService(ctx context.Context) *domain.Service {
 	if dp.lomsService == nil {
 		dp.lomsService = domain.New(
+			ctx,
 			dp.GetTransationManager(ctx),
 			dp.GetOrdersRepository(ctx),
 			dp.GetStocksRepository(ctx),
 			config.Data.Service.UnpaidOrderTtl,
 			dp.GetOrdersCancellingScheduler(),
 			dp.GetNotificationsClient(),
+			dp.GetOrdersStatusChangesRepository(ctx),
+			config.Data.Service.OrdersStatuschangesSubmissionInterval,
 		)
 	}
 	return dp.lomsService
@@ -140,5 +143,4 @@ func (dp *DependenciesProvider) GetLOMSService(ctx context.Context) *domain.Serv
 func (dp *DependenciesProvider) Close() {
 	dp.GetOrdersCancellingScheduler().WaitClose()
 	dp.GetOrdersCancellingWorkerPool().WaitClose()
-	dp.GetNotificationsWorkerPool().Close()
 }

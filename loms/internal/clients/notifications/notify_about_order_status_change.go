@@ -2,7 +2,6 @@ package notifications
 
 import (
 	"context"
-	"log"
 	"route256/loms/internal/models"
 	"route256/notifications/pkg/notificationsv1"
 	"strconv"
@@ -12,50 +11,27 @@ import (
 	"google.golang.org/protobuf/proto"
 )
 
-func (c *Client) NotifyAboutOrderStatusChange(ctx context.Context, orderID models.OrderID, orderStatus models.OrderStatus) {
+func (c *Client) NotifyAboutOrderStatusChange(ctx context.Context, change models.OrderStatusChange) error {
 	payload := notificationsv1.OrderStatusChangeNotification{
-		OrderID: int64(orderID),
-		Status:  string(orderStatus),
+		OrderID: int64(change.OrderID),
+		Status:  string(change.Status),
 	}
 	rawPayload, err := proto.Marshal(&payload)
 	if err != nil {
-		log.Println("Failed to serialize payload:", err)
-		return
+		return err
 	}
 
 	mesage := sarama.ProducerMessage{
 		Topic:     c.orderStatusTopicName,
-		Key:       sarama.StringEncoder(strconv.FormatInt(int64(orderID), 10)),
+		Key:       sarama.StringEncoder(strconv.FormatInt(int64(change.OrderID), 10)),
 		Value:     sarama.ByteEncoder(rawPayload),
 		Timestamp: time.Now(),
 	}
 
-	sendErrors := make(chan error)
-	task := func() {
-		_, _, err = c.producer.SendMessage(&mesage)
-		if err == nil {
-			close(sendErrors)
-			return
-		}
-
-		select {
-		case sendErrors <- err:
-		case <-ctx.Done():
-		}
+	_, _, err = c.producer.SendMessage(&mesage)
+	if err != nil {
+		return err
 	}
-	c.workerPool.Submit(task)
-	go func() {
-		for {
-			select {
-			case err, ok := <-sendErrors:
-				if !ok {
-					return
-				}
-				log.Println("Failed to send message:", err)
-				c.workerPool.Submit(task)
-			case <-ctx.Done():
-				return
-			}
-		}
-	}()
+
+	return nil
 }

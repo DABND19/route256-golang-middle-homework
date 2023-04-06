@@ -17,8 +17,9 @@ type ServerConfig struct {
 }
 
 type ServiceConfig struct {
-	UnpaidOrderTtl                     time.Duration `yaml:"unpaidOrderTtl"`
-	UnpaidOrdersCancellingWorkersCount int           `yaml:"unpaidOrdersCancellingWorkersCount"`
+	UnpaidOrderTtl                        time.Duration `yaml:"unpaidOrderTtl"`
+	UnpaidOrdersCancellingWorkersCount    int           `yaml:"unpaidOrdersCancellingWorkersCount"`
+	OrdersStatuschangesSubmissionInterval time.Duration `yaml:"ordersStatusChangesSubmissionInterval"`
 }
 
 type NotificationsServiceConfig struct {
