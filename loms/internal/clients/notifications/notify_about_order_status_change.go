@@ -3,7 +3,7 @@ package notifications
 import (
 	"context"
 	"route256/loms/internal/models"
-	"route256/notifications/pkg/notificationsv1"
+	apiSchema "route256/loms/pkg/lomsv1"
 	"strconv"
 	"time"
 
@@ -12,9 +12,9 @@ import (
 )
 
 func (c *Client) NotifyAboutOrderStatusChange(ctx context.Context, change models.OrderStatusChange) error {
-	payload := notificationsv1.OrderStatusChangeNotification{
-		OrderID: int64(change.OrderID),
-		Status:  string(change.Status),
+	payload := apiSchema.OrderStatusChange{
+		OrderID:       int64(change.OrderID),
+		UpdatedStatus: string(change.Status),
 	}
 	rawPayload, err := proto.Marshal(&payload)
 	if err != nil {
