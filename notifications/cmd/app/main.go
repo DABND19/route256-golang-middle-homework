@@ -2,16 +2,16 @@ package main
 
 import (
 	"context"
-	"fmt"
-	"log"
 	"os"
 	"os/signal"
 	"route256/libs/consumerwrapper"
+	"route256/libs/logger"
 	offsetstorage "route256/libs/offsetstorage/mock"
 	"route256/notifications/internal/config"
 	"route256/notifications/internal/handlers"
 
 	"github.com/Shopify/sarama"
+	"go.uber.org/zap"
 )
 
 func NewConsumer(brokers []string) (sarama.Consumer, error) {
@@ -30,14 +30,16 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
+	logger.Init(false)
+
 	err := config.Load("config.yml")
 	if err != nil {
-		log.Fatalln("Failed to load config:", err)
+		logger.Fatal("Failed to load config.", zap.Error(err))
 	}
 
 	consumer, err := NewConsumer(config.Data.Brokers)
 	if err != nil {
-		log.Fatalln("Couldn't connect to kafka cluster:", err)
+		logger.Fatal("Couldn't connect to kafka cluster.", zap.Error(err))
 	}
 	offsetStorage := offsetstorage.New()
 	wrapper := consumerwrapper.New(consumer, offsetStorage)
@@ -48,11 +50,16 @@ func main() {
 		handlers.HandleOrderStatusChange,
 	)
 	if err != nil {
-		log.Fatalln("Failed to subscribe to topic:", err)
+		logger.Fatal("Failed to subscribe to topic.", zap.Error(err))
 	}
 	go func() {
 		for errorMessage := range errorsChan {
-			fmt.Println("Received error:", errorMessage.Err, "\nMessage:", *errorMessage.Message)
+			logger.Error(
+				"Order status change notification error.",
+				zap.Error(errorMessage.Err),
+				zap.Binary("messageKey", errorMessage.Message.Key),
+				zap.Binary("messageValue", errorMessage.Message.Value),
+			)
 		}
 	}()
 

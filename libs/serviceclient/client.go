@@ -5,7 +5,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"log"
 	"net/http"
 	"net/url"
 )
@@ -43,8 +42,6 @@ func (c *ServiceClient) Request(ctx context.Context, endpointPath string, reqPay
 		return err
 	}
 	defer httpRes.Body.Close()
-
-	log.Println(reqUrl, httpRes.StatusCode)
 
 	ok := httpRes.StatusCode >= http.StatusOK && httpRes.StatusCode < http.StatusMultipleChoices
 	if !ok {

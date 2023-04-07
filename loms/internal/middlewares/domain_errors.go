@@ -3,9 +3,10 @@ package middlewares
 import (
 	"context"
 	"errors"
-	"log"
+	"route256/libs/logger"
 	"route256/loms/internal/domain"
 
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
 	"google.golang.org/grpc/status"
@@ -33,6 +34,6 @@ func DomainErrorsMiddleware(ctx context.Context, req any, info *grpc.UnaryServer
 		return nil, status.Error(codes.FailedPrecondition, err.Error())
 	}
 
-	log.Println(err)
+	logger.Error("Internal server error.", zap.Error(err))
 	return nil, status.Error(codes.Internal, "Internal server error")
 }

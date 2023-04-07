@@ -2,7 +2,6 @@ package loms
 
 import (
 	"context"
-	"log"
 	"route256/checkout/internal/models"
 	lomsServiceAPI "route256/loms/pkg/lomsv1"
 
@@ -13,7 +12,6 @@ func (c *Client) Stocks(ctx context.Context, sku models.SKU) ([]models.Stock, er
 	reqPayload := &lomsServiceAPI.SKU{Sku: uint32(sku)}
 	resPayload, err := c.lomsServiceClient.Stocks(ctx, reqPayload)
 	if err != nil {
-		log.Println(err)
 		return nil, errors.Wrap(err, "Failed to request stocks")
 	}
 

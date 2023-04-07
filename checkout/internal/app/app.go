@@ -2,14 +2,15 @@ package app
 
 import (
 	"context"
-	"log"
 	"net"
 	"route256/checkout/internal/config"
 	serviceAPI "route256/checkout/internal/handlers/v1"
 	"route256/checkout/internal/middlewares"
 	apiSchema "route256/checkout/pkg/checkoutv1"
+	"route256/libs/logger"
 
 	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
 )
@@ -26,10 +27,11 @@ func New(ctx context.Context) *App {
 }
 
 func (app *App) bootstrap(ctx context.Context) {
+	logger.Init(false)
+
 	if err := config.Load("config.yml"); err != nil {
-		log.Fatalln("Failed to load app config:", err)
+		logger.Fatal("Failed to load app config.", zap.Error(err))
 	}
-	log.Println(config.Data)
 
 	app.grpcServer = grpc.NewServer(
 		grpc.UnaryInterceptor(

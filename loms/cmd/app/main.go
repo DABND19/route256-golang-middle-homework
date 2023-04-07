@@ -2,10 +2,12 @@ package main
 
 import (
 	"context"
-	"log"
 	"os"
 	"os/signal"
+	"route256/libs/logger"
 	"route256/loms/internal/app"
+
+	"go.uber.org/zap"
 )
 
 func main() {
@@ -14,7 +16,7 @@ func main() {
 
 	application := app.New(ctx)
 	if err := application.Run(ctx); err != nil {
-		log.Fatalln("Couldn't run the application:", err)
+		logger.Fatal("Couldn't run the application.", zap.Error(err))
 	}
-	log.Println("Application stopped.")
+	logger.Info("Application stopped.")
 }

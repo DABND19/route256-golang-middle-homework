@@ -2,16 +2,17 @@ package app
 
 import (
 	"context"
-	"log"
 	lomsClient "route256/checkout/internal/clients/loms"
 	productClient "route256/checkout/internal/clients/product"
 	"route256/checkout/internal/config"
 	"route256/checkout/internal/domain"
 	cartsRepo "route256/checkout/internal/repository/postgresql/carts"
+	"route256/libs/logger"
 	txm "route256/libs/transactor/postgresql"
 	"route256/libs/workerpool"
 
 	"github.com/jackc/pgx/v4/pgxpool"
+	"go.uber.org/zap"
 )
 
 type DependenciesProvider struct {
@@ -38,10 +39,10 @@ func (dp *DependenciesProvider) GetDatabase(ctx context.Context) *pgxpool.Pool {
 		var err error
 		dp.database, err = pgxpool.Connect(ctx, config.Data.Postgres.DSN)
 		if err != nil {
-			log.Fatalln("Failed to connect to database:", err)
+			logger.Fatal("Failed to connect to database.", zap.Error(err))
 		}
 		if err := dp.database.Ping(ctx); err != nil {
-			log.Fatalln("Failed to ping database:", err)
+			logger.Fatal("Failed to ping database.", zap.Error(err))
 		}
 	}
 	return dp.database
@@ -66,7 +67,7 @@ func (dp *DependenciesProvider) GetLomsServiceClient() domain.LOMSServiceClient 
 		var err error
 		dp.lomsServiceClient, err = lomsClient.New(config.Data.ExternalServices.Loms.Url)
 		if err != nil {
-			log.Fatalln("Failed to connect to loms service:", err)
+			logger.Fatal("Failed to connect to loms service.", zap.Error(err))
 		}
 	}
 	return dp.lomsServiceClient
@@ -91,7 +92,7 @@ func (dp *DependenciesProvider) GetProductServiceClient() domain.ProductServiceC
 			dp.GetProductServiceClientWorkerPool(),
 		)
 		if err != nil {
-			log.Fatalln("Failed to connect to product service:", err)
+			logger.Fatal("Failed to connect to product service.", zap.Error(err))
 		}
 	}
 	return dp.productServiceClient

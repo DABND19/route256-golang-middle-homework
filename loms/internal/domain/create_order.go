@@ -3,10 +3,12 @@ package domain
 import (
 	"context"
 	"errors"
-	"log"
+	"route256/libs/logger"
 	"route256/loms/internal/models"
 	"sort"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 func (s *Service) reserveItem(ctx context.Context, orderID models.OrderID, item models.OrderItem) error {
@@ -124,10 +126,14 @@ func (s *Service) CreateOrder(
 			return
 		}
 		if err != nil {
-			log.Printf("Failed to cancel order #%d, reason %s\n", *orderID, err)
+			logger.Error(
+				"Failed to cancel order.",
+				zap.Int64("orderID", int64(*orderID)),
+				zap.Error(err),
+			)
 			return
 		}
-		log.Printf("Order #%d cancelled\n", *orderID)
+		logger.Info("Order cancelled.", zap.Int64("orderID", int64(*orderID)))
 	})
 
 	return orderID, err
