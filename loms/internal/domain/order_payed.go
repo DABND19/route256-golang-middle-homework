@@ -6,7 +6,7 @@ import (
 )
 
 func (s *Service) OrderPayed(ctx context.Context, orderID models.OrderID) error {
-	return s.RunSerializable(ctx, func(ctx context.Context) error {
+	err := s.RunSerializable(ctx, func(ctx context.Context) error {
 		order, err := s.OrdersRespository.GetOrder(ctx, orderID)
 		if err != nil {
 			return err
@@ -26,11 +26,16 @@ func (s *Service) OrderPayed(ctx context.Context, orderID models.OrderID) error 
 			}
 		}
 
-		err = s.OrdersRespository.ChangeOrderStatus(ctx, orderID, models.OrderStatusPayed)
+		err = s.changeOrderStatus(ctx, orderID, models.OrderStatusPayed)
 		if err != nil {
 			return err
 		}
 
 		return nil
 	})
+	if err != nil {
+		return err
+	}
+
+	return nil
 }

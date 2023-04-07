@@ -17,14 +17,26 @@ type ServerConfig struct {
 }
 
 type ServiceConfig struct {
-	UnpaidOrderTtl                     time.Duration `yaml:"unpaidOrderTtl"`
-	UnpaidOrdersCancellingWorkersCount int           `yaml:"unpaidOrdersCancellingWorkersCount"`
+	UnpaidOrderTtl                        time.Duration `yaml:"unpaidOrderTtl"`
+	UnpaidOrdersCancellingWorkersCount    int           `yaml:"unpaidOrdersCancellingWorkersCount"`
+	OrdersStatuschangesSubmissionInterval time.Duration `yaml:"ordersStatusChangesSubmissionInterval"`
+}
+
+type NotificationsServiceConfig struct {
+	KafkaBrokers                            []string `yaml:"kafkaBrokers"`
+	OrderStatusChangeNotificationsTopicName string   `yaml:"orderStatusChangeNotificationsTopicName"`
+	MaxWorkers                              int      `yaml:"maxWorkers"`
+}
+
+type ExternalServicesConfig struct {
+	NotificationsService NotificationsServiceConfig `yaml:"notificationsService"`
 }
 
 type Config struct {
-	Server   ServerConfig   `yaml:"server"`
-	Service  ServiceConfig  `yaml:"service"`
-	Postgres PostgresConfig `yaml:"postgres"`
+	Server           ServerConfig           `yaml:"server"`
+	Service          ServiceConfig          `yaml:"service"`
+	Postgres         PostgresConfig         `yaml:"postgres"`
+	ExternalServices ExternalServicesConfig `yaml:"externalServices"`
 }
 
 var Data = Config{}

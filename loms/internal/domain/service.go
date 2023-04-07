@@ -17,24 +17,36 @@ type Service struct {
 	TransactionRunner
 	OrdersRespository
 	StocksRespository
-	cancelOrderScheduler Scheduler
-	unpaidOrderTtl       time.Duration
+	NotificationsClient
+	OrderStatusChangeRepository
+	cancelOrderScheduler              Scheduler
+	unpaidOrderTtl                    time.Duration
+	ordersStatusChangesSumbitInterval time.Duration
 }
 
 func New(
+	ctx context.Context,
 	tr TransactionRunner,
 	ordersRepo OrdersRespository,
 	stocksRepo StocksRespository,
 	unpaidOrderTtl time.Duration,
 	cancelOrderScheduler Scheduler,
+	orderStatusChangeNotifier NotificationsClient,
+	orderStatusChangeRepository OrderStatusChangeRepository,
+	ordersStatusChangesSumbitInterval time.Duration,
 ) *Service {
-	return &Service{
+	s := &Service{
 		tr,
 		ordersRepo,
 		stocksRepo,
+		orderStatusChangeNotifier,
+		orderStatusChangeRepository,
 		cancelOrderScheduler,
 		unpaidOrderTtl,
+		ordersStatusChangesSumbitInterval,
 	}
+	s.runOrdersStatusChangesSubmission(ctx)
+	return s
 }
 
 type TransactionRunner interface {
@@ -51,7 +63,7 @@ type Scheduler interface {
 type OrdersRespository interface {
 	CreateOrder(ctx context.Context, user models.User, items []models.OrderItem) (*models.OrderID, error)
 	GetOrder(ctx context.Context, orderID models.OrderID) (*models.Order, error)
-	ChangeOrderStatus(ctx context.Context, orderID models.OrderID, status models.OrderStatus) error
+	UpdateOrderStatus(ctx context.Context, orderID models.OrderID, status models.OrderStatus) error
 }
 
 type StocksRespository interface {
@@ -61,4 +73,14 @@ type StocksRespository interface {
 	GetItemBookings(ctx context.Context, orderID models.OrderID, sku models.SKU) ([]models.ItemBooking, error)
 	CreateItemBooking(ctx context.Context, orderID models.OrderID, warehouseID models.WarehouseID, sku models.SKU, count uint16) error
 	DeleteItemBooking(ctx context.Context, orderID models.OrderID, warehouseID models.WarehouseID, sku models.SKU) error
+}
+
+type OrderStatusChangeRepository interface {
+	GetUnsubmittedChanges(ctx context.Context) ([]models.OrderStatusChange, error)
+	MarkChangeAsSubmitted(ctx context.Context, orderStatusChange models.OrderStatusChange) error
+	LogOrderStatusChange(ctx context.Context, orderID models.OrderID, status models.OrderStatus) error
+}
+
+type NotificationsClient interface {
+	NotifyAboutOrderStatusChange(ctx context.Context, change models.OrderStatusChange) error
 }

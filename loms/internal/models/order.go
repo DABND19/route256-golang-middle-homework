@@ -1,5 +1,7 @@
 package models
 
+import "time"
+
 type User int64
 
 type OrderID int64
@@ -23,4 +25,10 @@ type Order struct {
 	Status OrderStatus
 	User   User
 	Items  []OrderItem
+}
+
+type OrderStatusChange struct {
+	CreatedAt time.Time
+	OrderID   OrderID
+	Status    OrderStatus
 }

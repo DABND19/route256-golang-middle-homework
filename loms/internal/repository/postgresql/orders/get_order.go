@@ -2,9 +2,9 @@ package order
 
 import (
 	"context"
-	"fmt"
 	"route256/loms/internal/domain"
 	"route256/loms/internal/models"
+	"route256/loms/internal/repository/converters"
 	"route256/loms/internal/repository/schemas"
 
 	sq "github.com/Masterminds/squirrel"
@@ -74,7 +74,7 @@ func (repo *Repository) GetOrder(
 }
 
 func toOrderModel(orderRecord schemas.Order, orderItemRecords []schemas.OrderItem) (*models.Order, error) {
-	orderStatus, err := toOrderStatusModel(orderRecord.Status)
+	orderStatus, err := converters.ToDomainOrderStatus(orderRecord.Status)
 	if err != nil {
 		return nil, err
 	}
@@ -92,19 +92,4 @@ func toOrderModel(orderRecord schemas.Order, orderItemRecords []schemas.OrderIte
 		Status: orderStatus,
 		Items:  orderItems,
 	}, nil
-}
-
-func toOrderStatusModel(status string) (models.OrderStatus, error) {
-	orderStatusMapping := map[string]models.OrderStatus{
-		schemas.OrderStatusNew:             models.OrderStatusNew,
-		schemas.OrderStatusAwaitingPayment: models.OrderStatusAwaitingPayment,
-		schemas.OrderStatusFailed:          models.OrderStatusFailed,
-		schemas.OrderStatusPayed:           models.OrderStatusPayed,
-		schemas.OrderStatusCancelled:       models.OrderStatusCancelled,
-	}
-	convertedValue, ok := orderStatusMapping[status]
-	if !ok {
-		return "", fmt.Errorf("Invalid order_status enum value %s", status)
-	}
-	return convertedValue, nil
 }

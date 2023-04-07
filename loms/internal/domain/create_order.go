@@ -51,6 +51,22 @@ func (s *Service) reserveItem(ctx context.Context, orderID models.OrderID, item 
 	return nil
 }
 
+func (s *Service) changeOrderStatus(
+	ctx context.Context,
+	orderID models.OrderID,
+	updatedStatus models.OrderStatus,
+) error {
+	if err := s.OrdersRespository.UpdateOrderStatus(ctx, orderID, updatedStatus); err != nil {
+		return err
+	}
+
+	if err := s.OrderStatusChangeRepository.LogOrderStatusChange(ctx, orderID, updatedStatus); err != nil {
+		return err
+	}
+
+	return nil
+}
+
 func (s *Service) CreateOrder(
 	ctx context.Context,
 	user models.User,
@@ -61,6 +77,10 @@ func (s *Service) CreateOrder(
 	err := s.RunSerializable(ctx, func(ctx context.Context) error {
 		var err error
 		orderID, err = s.OrdersRespository.CreateOrder(ctx, user, items)
+		if err != nil {
+			return err
+		}
+		err = s.OrderStatusChangeRepository.LogOrderStatusChange(ctx, *orderID, models.OrderStatusNew)
 		if err != nil {
 			return err
 		}
@@ -83,7 +103,7 @@ func (s *Service) CreateOrder(
 			newOrderStatus = models.OrderStatusFailed
 		}
 
-		err = s.OrdersRespository.ChangeOrderStatus(ctx, *orderID, newOrderStatus)
+		err = s.changeOrderStatus(ctx, *orderID, newOrderStatus)
 		if err != nil {
 			return err
 		}
@@ -92,6 +112,9 @@ func (s *Service) CreateOrder(
 	})
 	if failedReservationError != nil {
 		return nil, failedReservationError
+	}
+	if err != nil {
+		return nil, err
 	}
 
 	s.cancelOrderScheduler.Schedule(time.Now().Add(s.unpaidOrderTtl), func() {

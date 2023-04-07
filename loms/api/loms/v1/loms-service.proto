@@ -48,3 +48,8 @@ message Stock {
 message StocksList {
   repeated Stock stocks = 1;
 }
+
+message OrderStatusChange {
+  int64 orderID = 1;
+  string updatedStatus = 2;
+}

@@ -3,5 +3,14 @@ server:
 service:
   unpaidOrderTtl: 10m
   unpaidOrdersCancellingWorkersCount: 5
+  ordersStatusChangesSubmissionInterval: 1m
 postgres:
   dsn: postgres://user:hackme123@loms_pgbouncer:6432/loms?sslmode=disable
+externalServices:
+  notificationsService:
+    kafkaBrokers:
+      - notifications_kafka_broker1:29091
+      - notifications_kafka_broker2:29092
+      - notifications_kafka_broker3:29093
+    orderStatusChangeNotificationsTopicName: order-status-change-notifications
+    maxWorkers: 5
