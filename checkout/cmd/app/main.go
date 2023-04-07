@@ -3,91 +3,18 @@ package main
 import (
 	"context"
 	"log"
-	"net"
 	"os"
 	"os/signal"
-	"route256/checkout/internal/clients/loms"
-	"route256/checkout/internal/clients/product"
-	"route256/checkout/internal/config"
-	"route256/checkout/internal/domain"
-	serviceAPI "route256/checkout/internal/handlers/v1"
-	"route256/checkout/internal/middlewares"
-	cartsRepository "route256/checkout/internal/repository/postgresql/carts"
-	apiSchema "route256/checkout/pkg/checkoutv1"
-	transactionManager "route256/libs/transactor/postgresql"
-	"route256/libs/workerpool"
-
-	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
-	"github.com/jackc/pgx/v4/pgxpool"
-	"google.golang.org/grpc"
-	"google.golang.org/grpc/reflection"
+	"route256/checkout/internal/app"
 )
 
 func main() {
-	err := config.Load("config.yml")
-	if err != nil {
-		log.Fatalln("Failed to load config:", err)
-	}
-
-	lomsServiceClient, err := loms.New(config.Data.ExternalServices.Loms.Url)
-	if err != nil {
-		log.Fatalln("Couldn't connect to LOMS service:", err)
-	}
-
-	productServiceWorkerPool := workerpool.New(
-		config.Data.ExternalServices.Product.MaxConcurrentRequests,
-	)
-	defer productServiceWorkerPool.Close()
-	productServiceClient, err := product.New(
-		config.Data.ExternalServices.Product.Url,
-		config.Data.ExternalServices.Product.AccessToken,
-		int(config.Data.ExternalServices.Product.RateLimit),
-		productServiceWorkerPool,
-	)
-	if err != nil {
-		log.Fatalln("Couldn't connect to product service:", err)
-	}
-
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	pgPool, err := pgxpool.Connect(ctx, config.Data.Postgres.DSN)
-	if err != nil {
-		log.Fatalln(err)
+	application := app.New(ctx)
+	if err := application.Run(ctx); err != nil {
+		log.Fatalln("Couldn't run the application:", err)
 	}
-
-	db := transactionManager.New(pgPool)
-	cartsRepo := cartsRepository.New(db)
-	service := domain.New(
-		db,
-		cartsRepo,
-		lomsServiceClient,
-		productServiceClient,
-	)
-
-	lis, err := net.Listen("tcp", config.Data.Server.Address)
-	if err != nil {
-		log.Fatalln(err)
-	}
-
-	s := grpc.NewServer(
-		grpc.UnaryInterceptor(
-			grpcMiddleware.ChainUnaryServer(middlewares.DomainErrorsMiddleware),
-		),
-	)
-	reflection.Register(s)
-
-	checkoutV1 := serviceAPI.New(service)
-	apiSchema.RegisterCheckoutV1Server(s, checkoutV1)
-
-	go func() {
-		<-ctx.Done()
-		s.GracefulStop()
-	}()
-	log.Println("Server listen on:", lis.Addr())
-	err = s.Serve(lis)
-	if err != nil {
-		log.Fatalln("Couldn't start a server:", err)
-	}
-	log.Println("Server stopped")
+	log.Println("Application stopped.")
 }
