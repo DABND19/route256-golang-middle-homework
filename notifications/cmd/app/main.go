@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/signal"
 	"route256/libs/consumerwrapper"
+	offsetstorage "route256/libs/offsetstorage/mock"
 	"route256/notifications/internal/config"
 	"route256/notifications/internal/handlers"
 
@@ -25,25 +26,6 @@ func NewConsumer(brokers []string) (sarama.Consumer, error) {
 	return consumer, err
 }
 
-type MockOffsetStorage struct {
-	state map[int32]int64
-}
-
-func NewMockOffsetStorage() *MockOffsetStorage {
-	return &MockOffsetStorage{
-		state: make(map[int32]int64),
-	}
-}
-
-func (s *MockOffsetStorage) GetOffset(ctx context.Context, partition int32) (int64, error) {
-	return s.state[partition], nil
-}
-
-func (s *MockOffsetStorage) SetOffset(ctx context.Context, partition int32, value int64) error {
-	s.state[partition] = value
-	return nil
-}
-
 func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
@@ -57,7 +39,7 @@ func main() {
 	if err != nil {
 		log.Fatalln("Couldn't connect to kafka cluster:", err)
 	}
-	offsetStorage := NewMockOffsetStorage()
+	offsetStorage := offsetstorage.New()
 	wrapper := consumerwrapper.New(consumer, offsetStorage)
 
 	errorsChan, err := wrapper.Subscribe(
