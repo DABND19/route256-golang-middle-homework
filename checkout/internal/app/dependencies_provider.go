@@ -36,8 +36,13 @@ func NewDependenciesProvider() *DependenciesProvider {
 
 func (dp *DependenciesProvider) GetDatabase(ctx context.Context) *pgxpool.Pool {
 	if dp.database == nil {
-		var err error
-		dp.database, err = pgxpool.Connect(ctx, config.Data.Postgres.DSN)
+		dbConfig, err := pgxpool.ParseConfig(config.Data.Postgres.DSN)
+		if err != nil {
+			logger.Fatal("Failed to parse database config.", zap.Error(err))
+		}
+		dbConfig.ConnConfig.PreferSimpleProtocol = true
+
+		dp.database, err = pgxpool.ConnectConfig(ctx, dbConfig)
 		if err != nil {
 			logger.Fatal("Failed to connect to database.", zap.Error(err))
 		}
