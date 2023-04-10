@@ -8,7 +8,8 @@ import (
 )
 
 type ServerConfig struct {
-	Address string `yaml:"address"`
+	Address        string `yaml:"address"`
+	MetricsAddress string `yaml:"metricsAddress"`
 }
 
 type PostgresConfig struct {

@@ -13,7 +13,8 @@ type PostgresConfig struct {
 }
 
 type ServerConfig struct {
-	Address string `yaml:"address"`
+	Address        string `yaml:"address"`
+	MetricsAddress string `yaml:"metricsAddress"`
 }
 
 type ServiceConfig struct {

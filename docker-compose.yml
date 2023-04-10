@@ -1,5 +1,15 @@
 version: "3.1"
 services:
+  prometheus:
+    image: prom/prometheus
+    ports:
+      - 1010:9090
+    volumes:
+      - ./deploy/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml
+      - ./deploy/prometheus/alerts.yml:/etc/prometheus/alerts.yml
+    depends_on:
+      - loms_app
+
   checkout_app:
     image: checkout
     build: ./checkout/

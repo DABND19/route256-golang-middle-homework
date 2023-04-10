@@ -1,5 +1,6 @@
 server:
   address: ":8081"
+  metricsAddress: ":1000"
 service:
   unpaidOrderTtl: 10m
   unpaidOrdersCancellingWorkersCount: 5

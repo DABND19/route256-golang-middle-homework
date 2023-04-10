@@ -1,5 +1,6 @@
 server:
   address: ":8080"
+  metricsAddress: ":1000"
 postgres:
   dsn: postgres://user:hackme123@checkout_pgbouncer:6432/checkout?sslmode=disable
 externalServices:
