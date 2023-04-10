@@ -11,8 +11,11 @@ import (
 	apiSchema "route256/checkout/pkg/checkoutv1"
 	"route256/libs/logger"
 	"route256/libs/metrics"
+	"route256/libs/tracing"
 
 	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+	"github.com/opentracing/opentracing-go"
 	"go.uber.org/zap"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/reflection"
@@ -36,9 +39,15 @@ func (app *App) bootstrap(ctx context.Context) {
 		logger.Fatal("Failed to load app config.", zap.Error(err))
 	}
 
+	tracing.Init(
+		"checkout_app",
+		config.Data.Server.TracesCollectorEndpoint,
+	)
+
 	app.grpcServer = grpc.NewServer(
 		grpc.UnaryInterceptor(
 			grpcMiddleware.ChainUnaryServer(
+				otgrpc.OpenTracingServerInterceptor(opentracing.GlobalTracer()),
 				metrics.ServerMetricsMiddleware,
 				middlewares.DomainErrorsMiddleware,
 			),

@@ -1,11 +1,12 @@
 server:
   address: ":8080"
   metricsAddress: ":1000"
+  tracesCollectorEndpoint: http://jaeger:14268/api/traces
 postgres:
   dsn: postgres://user:hackme123@checkout_pgbouncer:6432/checkout?sslmode=disable
 externalServices:
   loms:
-    url: loms:8081
+    url: loms_app:8081
   product:
     url: route256.pavl.uk:8082
     accessToken: test_token
