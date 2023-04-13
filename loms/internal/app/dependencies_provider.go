@@ -2,7 +2,7 @@ package app
 
 import (
 	"context"
-	"log"
+	"route256/libs/logger"
 	"route256/libs/scheduler"
 	txm "route256/libs/transactor/postgresql"
 	"route256/libs/workerpool"
@@ -15,6 +15,7 @@ import (
 
 	"github.com/Shopify/sarama"
 	"github.com/jackc/pgx/v4/pgxpool"
+	"go.uber.org/zap"
 )
 
 type DependenciesProvider struct {
@@ -41,13 +42,18 @@ func NewDependenciesProvider() *DependenciesProvider {
 
 func (dp *DependenciesProvider) GetDatabase(ctx context.Context) *pgxpool.Pool {
 	if dp.database == nil {
-		var err error
-		dp.database, err = pgxpool.Connect(ctx, config.Data.Postgres.DSN)
+		dbConfig, err := pgxpool.ParseConfig(config.Data.Postgres.DSN)
 		if err != nil {
-			log.Fatalln("Failed to connect to database:", err)
+			logger.Fatal("Failed to parse database config.", zap.Error(err))
+		}
+		dbConfig.ConnConfig.PreferSimpleProtocol = true
+
+		dp.database, err = pgxpool.ConnectConfig(ctx, dbConfig)
+		if err != nil {
+			logger.Fatal("Failed to connect to database.", zap.Error(err))
 		}
 		if err := dp.database.Ping(ctx); err != nil {
-			log.Fatalln("Failed to ping database:", err)
+			logger.Fatal("Failed to ping database.", zap.Error(err))
 		}
 	}
 	return dp.database
@@ -107,7 +113,7 @@ func (dp *DependenciesProvider) GetNotificationsSyncProducer() sarama.SyncProduc
 		var err error
 		dp.notificationsSyncProducer, err = sarama.NewSyncProducer(config.Data.ExternalServices.NotificationsService.KafkaBrokers, producerConfig)
 		if err != nil {
-			log.Fatalln("Failed to connect to notifications kafka cluster:", err)
+			logger.Fatal("Failed to connect to notifications kafka cluster.", zap.Error(err))
 		}
 	}
 	return dp.notificationsSyncProducer

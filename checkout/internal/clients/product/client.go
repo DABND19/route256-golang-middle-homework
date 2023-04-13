@@ -6,6 +6,8 @@ import (
 	productServiceAPI "route256/product-service/pkg/product"
 	"time"
 
+	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
+	"github.com/opentracing/opentracing-go"
 	"golang.org/x/time/rate"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/credentials/insecure"
@@ -23,7 +25,11 @@ type Client struct {
 }
 
 func New(address string, token string, rateLimit int, workerPool workerpool.WorkerPool) (domain.ProductServiceClient, error) {
-	cc, err := grpc.Dial(address, grpc.WithTransportCredentials(insecure.NewCredentials()))
+	cc, err := grpc.Dial(
+		address,
+		grpc.WithTransportCredentials(insecure.NewCredentials()),
+		grpc.WithUnaryInterceptor(otgrpc.OpenTracingClientInterceptor(opentracing.GlobalTracer())),
+	)
 	if err != nil {
 		return nil, err
 	}

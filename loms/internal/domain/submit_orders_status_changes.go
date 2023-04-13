@@ -2,9 +2,11 @@ package domain
 
 import (
 	"context"
-	"log"
+	"route256/libs/logger"
 	"route256/loms/internal/models"
 	"time"
+
+	"go.uber.org/zap"
 )
 
 func (s *Service) runOrdersStatusChangesSubmission(ctx context.Context) {
@@ -33,14 +35,14 @@ func (s *Service) submitOrdersStatusChanges(ctx context.Context) {
 		return nil
 	})
 	if err != nil {
-		log.Println("Failed to query unsubmitted orders status changes:", err)
+		logger.Error("Failed to query unsubmitted orders status changes.", zap.Error(err))
 		return
 	}
 
 	for _, item := range records {
 		err := s.NotificationsClient.NotifyAboutOrderStatusChange(ctx, item)
 		if err != nil {
-			log.Println("Failed to send notification:", err)
+			logger.Error("Failed to send notification.", zap.Error(err))
 			continue
 		}
 
@@ -48,7 +50,7 @@ func (s *Service) submitOrdersStatusChanges(ctx context.Context) {
 			return s.OrderStatusChangeRepository.MarkChangeAsSubmitted(ctx, item)
 		})
 		if err != nil {
-			log.Println("Failed to mark notification as submitted:", err)
+			logger.Error("Failed to mark notification as submitted.", zap.Error(err))
 		}
 	}
 }

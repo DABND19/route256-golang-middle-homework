@@ -1,10 +1,11 @@
 package handlers
 
 import (
-	"log"
+	"route256/libs/logger"
 	apiSchema "route256/loms/pkg/lomsv1"
 
 	"github.com/Shopify/sarama"
+	"go.uber.org/zap"
 	"google.golang.org/protobuf/proto"
 )
 
@@ -15,6 +16,10 @@ func HandleOrderStatusChange(message *sarama.ConsumerMessage) error {
 		return err
 	}
 
-	log.Printf("Order #%d has changed status to %s\n", payload.OrderID, payload.UpdatedStatus)
+	logger.Info(
+		"Order has changed status.",
+		zap.Int64("orderID", payload.OrderID),
+		zap.String("updatedStatus", payload.UpdatedStatus),
+	)
 	return nil
 }

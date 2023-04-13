@@ -4,8 +4,10 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
-	"log"
 	"net/http"
+	"route256/libs/logger"
+
+	"go.uber.org/zap"
 )
 
 type Validator interface {
@@ -43,7 +45,7 @@ func (wrapper *Wrapper[Req, Res]) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		}
 		err := writeError(w, httpError)
 		if err != nil {
-			log.Fatal("Failed to encode error payload:", err)
+			logger.Error("Failed to encode error payload.", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -59,7 +61,7 @@ func (wrapper *Wrapper[Req, Res]) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		}
 		err := writeError(w, httpError)
 		if err != nil {
-			log.Fatal("Failed to encode error payload:", err)
+			logger.Error("Failed to encode error payload.", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -74,7 +76,7 @@ func (wrapper *Wrapper[Req, Res]) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		}
 		err := writeError(w, httpError)
 		if err != nil {
-			log.Println("Failed to encode error payload:", err)
+			logger.Error("Failed to encode error payload.", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -88,13 +90,13 @@ func (wrapper *Wrapper[Req, Res]) ServeHTTP(w http.ResponseWriter, r *http.Reque
 		if errors.As(err, &httpError) {
 			err := writeError(w, httpError)
 			if err != nil {
-				log.Println("Failed to encode error payload:", err)
+				logger.Error("Failed to encode error payload.", zap.Error(err))
 				w.WriteHeader(http.StatusInternalServerError)
 				return
 			}
 			return
 		} else {
-			log.Println("Internal server error:", err)
+			logger.Error("Internal server error.", zap.Error(err))
 			w.WriteHeader(http.StatusInternalServerError)
 			return
 		}
@@ -102,7 +104,7 @@ func (wrapper *Wrapper[Req, Res]) ServeHTTP(w http.ResponseWriter, r *http.Reque
 
 	err = writeJSON(w, resPayload, http.StatusOK)
 	if err != nil {
-		log.Println("Failed to encode response payload:", err)
+		logger.Error("Failed to encode response payload.", zap.Error(err))
 		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}

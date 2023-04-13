@@ -1,5 +1,7 @@
 server:
   address: ":8081"
+  metricsAddress: ":1000"
+  tracesCollectorEndpoint: http://jaeger:14268/api/traces
 service:
   unpaidOrderTtl: 10m
   unpaidOrdersCancellingWorkersCount: 5

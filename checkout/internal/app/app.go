@@ -5,13 +5,13 @@ import (
 	"errors"
 	"net"
 	"net/http"
+	"route256/checkout/internal/config"
+	serviceAPI "route256/checkout/internal/handlers/v1"
+	"route256/checkout/internal/middlewares"
+	apiSchema "route256/checkout/pkg/checkoutv1"
 	"route256/libs/logger"
 	"route256/libs/metrics"
 	"route256/libs/tracing"
-	"route256/loms/internal/config"
-	serviceAPI "route256/loms/internal/handlers/v1"
-	"route256/loms/internal/middlewares"
-	apiSchema "route256/loms/pkg/lomsv1"
 
 	grpcMiddleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	"github.com/grpc-ecosystem/grpc-opentracing/go/otgrpc"
@@ -40,7 +40,7 @@ func (app *App) bootstrap(ctx context.Context) {
 	}
 
 	tracing.Init(
-		"loms_app",
+		"checkout_app",
 		config.Data.Server.TracesCollectorEndpoint,
 	)
 
@@ -56,8 +56,8 @@ func (app *App) bootstrap(ctx context.Context) {
 	reflection.Register(app.grpcServer)
 
 	app.dependencies = NewDependenciesProvider()
-	lomsAPI := serviceAPI.New(app.dependencies.GetLOMSService(ctx))
-	apiSchema.RegisterLomsV1Server(app.grpcServer, lomsAPI)
+	lomsAPI := serviceAPI.New(app.dependencies.GetCheckoutService(ctx))
+	apiSchema.RegisterCheckoutV1Server(app.grpcServer, lomsAPI)
 }
 
 func runMetricsServer(address string) {

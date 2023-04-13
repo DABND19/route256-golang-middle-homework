@@ -15,7 +15,8 @@ func (r *Repository) GetUnsubmittedChanges(ctx context.Context) ([]models.OrderS
 
 	q := r.queryBuilder.Select(ordersStatusChangesColumns...).
 		From(ordersStatusChangesTableName).
-		Where(sq.Eq{"submitted_at": nil})
+		Where(sq.Eq{"submitted_at": nil}).
+		OrderBy("created_at")
 
 	sql, args, err := q.ToSql()
 	if err != nil {
