@@ -9,11 +9,14 @@ import (
 )
 
 var (
-	RequestsCounter = promauto.NewCounter(prometheus.CounterOpts{
-		Namespace: "route256",
-		Subsystem: "http",
-		Name:      "requests_total",
-	})
+	RequestsCounter = promauto.NewCounterVec(
+		prometheus.CounterOpts{
+			Namespace: "route256",
+			Subsystem: "http",
+			Name:      "requests_total",
+		},
+		[]string{"method"},
+	)
 	ResponseCounter = promauto.NewCounterVec(
 		prometheus.CounterOpts{
 			Namespace: "route256",

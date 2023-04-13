@@ -9,7 +9,7 @@ import (
 )
 
 func ServerMetricsMiddleware(ctx context.Context, req any, info *grpc.UnaryServerInfo, handler grpc.UnaryHandler) (any, error) {
-	RequestsCounter.Inc()
+	RequestsCounter.WithLabelValues(info.FullMethod).Inc()
 
 	timeStart := time.Now()
 	res, err := handler(ctx, req)
