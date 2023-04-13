@@ -16,8 +16,7 @@ func New(isDebug bool) *zap.Logger {
 	} else {
 		config := zap.NewProductionConfig()
 		config.DisableCaller = true
-		config.DisableStacktrace = true
-		config.Level = zap.NewAtomicLevelAt(zap.DebugLevel)
+		config.Level = zap.NewAtomicLevelAt(zap.InfoLevel)
 		logger, err = config.Build()
 	}
 	if err != nil {
