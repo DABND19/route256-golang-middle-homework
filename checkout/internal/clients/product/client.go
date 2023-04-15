@@ -2,6 +2,7 @@ package product
 
 import (
 	"route256/checkout/internal/domain"
+	"route256/checkout/internal/models"
 	"route256/libs/workerpool"
 	productServiceAPI "route256/product-service/pkg/product"
 	"time"
@@ -22,9 +23,21 @@ type Client struct {
 	token                string
 	limiter              *rate.Limiter
 	wp                   WorkerPool
+	cache                Cache
 }
 
-func New(address string, token string, rateLimit int, workerPool workerpool.WorkerPool) (domain.ProductServiceClient, error) {
+type Cache interface {
+	Get(sku models.SKU) (*models.Product, bool)
+	Set(sku models.SKU, product *models.Product)
+}
+
+func New(
+	address string,
+	token string,
+	rateLimit int,
+	workerPool workerpool.WorkerPool,
+	cache Cache,
+) (domain.ProductServiceClient, error) {
 	cc, err := grpc.Dial(
 		address,
 		grpc.WithTransportCredentials(insecure.NewCredentials()),
@@ -38,5 +51,6 @@ func New(address string, token string, rateLimit int, workerPool workerpool.Work
 		token:                token,
 		limiter:              rate.NewLimiter(rate.Every(1*time.Second), rateLimit),
 		wp:                   workerPool,
+		cache:                cache,
 	}, nil
 }
