@@ -8,6 +8,7 @@ import (
 	"route256/checkout/internal/domain"
 	"route256/checkout/internal/models"
 	cartsRepo "route256/checkout/internal/repository/postgresql/carts"
+	"route256/libs/cachemetrics"
 	"route256/libs/logger"
 	"route256/libs/lrucache"
 	txm "route256/libs/transactor/postgresql"
@@ -27,7 +28,7 @@ type DependenciesProvider struct {
 	lomsServiceClient domain.LOMSServiceClient
 
 	productServiceClientWorkerPool workerpool.WorkerPool
-	productServiceClientCache      *lrucache.LRU[models.SKU, *models.Product]
+	productServiceClientCache      *cachemetrics.CacheMetrics[models.SKU, *models.Product]
 	productServiceClient           domain.ProductServiceClient
 
 	checkoutService *domain.Service
@@ -90,11 +91,12 @@ func (dp *DependenciesProvider) GetProductServiceClientWorkerPool() workerpool.W
 	return dp.productServiceClientWorkerPool
 }
 
-func (dp *DependenciesProvider) GetProductServiceClientCache() *lrucache.LRU[models.SKU, *models.Product] {
+func (dp *DependenciesProvider) GetProductServiceClientCache() *cachemetrics.CacheMetrics[models.SKU, *models.Product] {
 	if dp.productServiceClientCache == nil {
-		dp.productServiceClientCache = lrucache.New[models.SKU, *models.Product](
+		cache := lrucache.New[models.SKU, *models.Product](
 			config.Data.ExternalServices.Product.CacheMaxSize,
 		)
+		dp.productServiceClientCache = cachemetrics.New[models.SKU, *models.Product](cache, "product_service")
 	}
 	return dp.productServiceClientCache
 }

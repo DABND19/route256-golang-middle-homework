@@ -81,11 +81,3 @@ func (c *LRU[KeyT, ValueT]) Set(key KeyT, value ValueT) {
 		c.q.Remove(front)
 	}
 }
-
-func (c *LRU[KeyT, ValueT]) Clear() {
-	c.mx.Lock()
-	defer c.mx.Unlock()
-
-	c.store = make(cacheStore[KeyT, ValueT], c.maxSize)
-	c.q = list.New()
-}
