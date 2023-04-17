@@ -12,3 +12,4 @@ externalServices:
     accessToken: test_token
     rateLimit: 10
     maxConcurrentRequests: 5
+    cacheMaxSize: 20

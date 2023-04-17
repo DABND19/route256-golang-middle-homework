@@ -6,8 +6,11 @@ import (
 	productClient "route256/checkout/internal/clients/product"
 	"route256/checkout/internal/config"
 	"route256/checkout/internal/domain"
+	"route256/checkout/internal/models"
 	cartsRepo "route256/checkout/internal/repository/postgresql/carts"
+	"route256/libs/cachemetrics"
 	"route256/libs/logger"
+	"route256/libs/lrucache"
 	txm "route256/libs/transactor/postgresql"
 	"route256/libs/workerpool"
 
@@ -25,6 +28,7 @@ type DependenciesProvider struct {
 	lomsServiceClient domain.LOMSServiceClient
 
 	productServiceClientWorkerPool workerpool.WorkerPool
+	productServiceClientCache      *cachemetrics.CacheMetrics[models.SKU, *models.Product]
 	productServiceClient           domain.ProductServiceClient
 
 	checkoutService *domain.Service
@@ -87,6 +91,16 @@ func (dp *DependenciesProvider) GetProductServiceClientWorkerPool() workerpool.W
 	return dp.productServiceClientWorkerPool
 }
 
+func (dp *DependenciesProvider) GetProductServiceClientCache() *cachemetrics.CacheMetrics[models.SKU, *models.Product] {
+	if dp.productServiceClientCache == nil {
+		cache := lrucache.New[models.SKU, *models.Product](
+			config.Data.ExternalServices.Product.CacheMaxSize,
+		)
+		dp.productServiceClientCache = cachemetrics.New[models.SKU, *models.Product](cache, "product_service")
+	}
+	return dp.productServiceClientCache
+}
+
 func (dp *DependenciesProvider) GetProductServiceClient() domain.ProductServiceClient {
 	if dp.productServiceClient == nil {
 		var err error
@@ -95,6 +109,7 @@ func (dp *DependenciesProvider) GetProductServiceClient() domain.ProductServiceC
 			config.Data.ExternalServices.Product.AccessToken,
 			int(config.Data.ExternalServices.Product.RateLimit),
 			dp.GetProductServiceClientWorkerPool(),
+			dp.GetProductServiceClientCache(),
 		)
 		if err != nil {
 			logger.Fatal("Failed to connect to product service.", zap.Error(err))

@@ -26,6 +26,7 @@ type ProductServiceConfig struct {
 	AccessToken           string `yaml:"accessToken"`
 	RateLimit             uint16 `yaml:"rateLimit"`
 	MaxConcurrentRequests int    `yaml:"maxConcurrentRequests"`
+	CacheMaxSize          int    `yaml:"cacheMaxSize"`
 }
 
 type Config struct {

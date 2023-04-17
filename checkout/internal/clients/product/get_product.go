@@ -11,6 +11,11 @@ import (
 )
 
 func (c *Client) GetProduct(ctx context.Context, sku models.SKU) (*models.Product, error) {
+	res, ok := c.cache.Get(sku)
+	if ok {
+		return res, nil
+	}
+
 	err := c.limiter.Wait(ctx)
 	if err != nil {
 		return nil, domain.ProductServiceRateLimitError
@@ -28,8 +33,11 @@ func (c *Client) GetProduct(ctx context.Context, sku models.SKU) (*models.Produc
 		return nil, err
 	}
 
-	return &models.Product{
+	res = &models.Product{
 		Name:  resPayload.GetName(),
 		Price: resPayload.GetPrice(),
-	}, nil
+	}
+	c.cache.Set(sku, res)
+
+	return res, nil
 }
